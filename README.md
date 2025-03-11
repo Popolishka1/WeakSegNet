@@ -20,12 +20,12 @@ In addition, we will explorethe following research questions to enhance the proj
 ## Dataset
 - **Oxford-IIIT Pet Dataset** ([Link](https://www.robots.ox.ac.uk/~vgg/data/pets/))
 - Contains thousands of images of 37 pet breeds with pixel-wise segmentation labels.
-- 
+
 ## Repository Structure
 TBD
 ```
 ├── src/                # Codebase for WeakSegNet implementation
-│   ├── model.py        # Deep learning model
+│   ├── fromage.py      # Deep learning model
 ├── notebooks/          # Jupyter notebooks for experimentation
 ├── results/
 ├── README.md           # This file
@@ -49,16 +49,17 @@ python src/tbd.py
 ```
 
 ### 33. Evaluating performance
-Evaluate model predictions and compare against baselines:
+Evaluate model predictions and compare against baselines: TBD
 ```sh
 python src/tbd.py
 ```
 
 ## References & Resources
-- **Course information**: see on Moodle
+- **Project information**: see on Moodle
 - **Dataset**: [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 
 ## Contributors
-- Name
+- Name 1
+- Name 2
 
 
