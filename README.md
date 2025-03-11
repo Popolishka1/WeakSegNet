@@ -9,19 +9,19 @@ Our implementation is evaluated on the **Oxford-IIIT Pet Dataset**.
 ### General goal
 - Define a weak supervision problem
 - Select a weakly-supervised segmentation algorithm
-- Implement a **weakly-supervised segmentation network**
+- Implement a weakly-supervised segmentation network
 - Compare performance with a **fully-supervised method** and conduct an **ablation study** on key hyperparameters
 
 ### Extension
 In addition, we will explorethe following research questions to enhance the project:
 - How do different forms of weak supervision impact segmentation performance?
-- Conduct controlled experiments to evaluate the segmentation quality under weak labels.
+- Conduct controlled experiments to evaluate the segmentation quality under weak labels
 
 ## Dataset
 - **Oxford-IIIT Pet Dataset** ([Link](https://www.robots.ox.ac.uk/~vgg/data/pets/))
-- Contains thousands of images of 37 pet breeds with pixel-wise segmentation labels.
+- Contains thousands of images of 37 pet breeds with pixel-wise segmentation labels
 
-## Repository Structure
+## Repository structure
 TBD
 ```
 ├── src/                # Codebase for WeakSegNet implementation
@@ -33,7 +33,7 @@ TBD
 
 ## Getting started
 ### 1️. Environment setup
-Create a Conda environment and install dependencies:
+Create a conda env and install dependencies:
 ```sh
 conda create --name weakseg python=3.9 -y && \
 conda activate weakseg && \
@@ -54,8 +54,8 @@ Evaluate model predictions and compare against baselines: TBD
 python src/tbd.py
 ```
 
-## References & Resources
-- **Project information**: see on Moodle
+## References & resources
+- **Project information**: see on Moodle the .pdf file
 - **Dataset**: [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 
 ## Contributors
