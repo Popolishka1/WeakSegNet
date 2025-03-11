@@ -48,7 +48,7 @@ Run the training script: TBD
 python src/tbd.py
 ```
 
-### 33. Evaluating performance
+### 3. Evaluating performance
 Evaluate model predictions and compare against baselines: TBD
 ```sh
 python src/tbd.py
