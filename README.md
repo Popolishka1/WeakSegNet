@@ -1,4 +1,4 @@
-# WeakSegNet: Weakly-Supervised Neural Networks for Image Segmentation
+# WeakSegNet: Weakly-supervised neural networks for image segmentation
 
 ## Project overview
 This repository contains the implementation of **WeakSegNet**, a weakly-supervised deep learning framework for image segmentation. Developed as part of **COMP0197: Applied Deep Learning** group project.
