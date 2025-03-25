@@ -67,6 +67,6 @@ Evaluate model predictions and compare against baselines: TBD
 
 ## Contributors
 - Paul Hellegouarch
-- Name 2
+- Jules Talbourdet
 
 
