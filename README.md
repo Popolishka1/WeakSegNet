@@ -22,12 +22,21 @@ In addition, we will explorethe following research questions to enhance the proj
 - Contains thousands of images of 37 pet breeds with pixel-wise segmentation labels
 
 ## Repository structure
-TBD
 ```
-├── src/                # Codebase for WeakSegNet implementation
-│   ├── fromage.py      # Deep learning model
+├── data
+    ├── annotations   
+    ├── images
 ├── notebooks/          # Jupyter notebooks for experimentation
+├── src/                # Codebase for WeakSegNet implementation
+│   ├── __init__.py 
+│   ├── baseline.py 
+│   ├── data_loading.py 
+│   ├── fit.py 
+│   ├── main.py 
+│   ├── metrics.py 
+│   ├── utilities.py 
 ├── results/
+├── .gitignore
 ├── README.md           # This file
 ```
 
@@ -43,23 +52,21 @@ conda install -y pytorch torchvision torchaudio -c pytorch
 ```
 
 ### 2. Training the model
-Run the training script: TBD
+Run the training script (only baseline for now)
 ```sh
-python src/tbd.py
+python src/main.py
 ```
 
 ### 3. Evaluating performance
 Evaluate model predictions and compare against baselines: TBD
-```sh
-python src/tbd.py
-```
+
 
 ## References & resources
 - **Project information**: see on Moodle the .pdf file
 - **Dataset**: [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
 
 ## Contributors
-- Name 1
+- Paul Hellegouarch
 - Name 2
 
 
