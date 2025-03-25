@@ -23,14 +23,14 @@ In addition, we will explorethe following research questions to enhance the proj
 
 ## Repository structure
 ```
-├── data
-    ├── annotations   
-    ├── images
+├── data/
+│   ├── annotations   
+│   ├── images
 ├── notebooks/          # Jupyter notebooks for experimentation
 ├── src/                # Codebase for WeakSegNet implementation
 │   ├── __init__.py 
 │   ├── baseline.py 
-│   ├── data_loading.py 
+│   ├── dataset.py 
 │   ├── fit.py 
 │   ├── main.py 
 │   ├── metrics.py 
@@ -46,13 +46,12 @@ Create a conda env and install dependencies:
 ```sh
 conda create --name weakseg python=3.9 -y && \
 conda activate weakseg && \
-conda install -y numpy pandas matplotlib tqdm && \
-conda install -y -c conda-forge opencv scikit-learn && \
-conda install -y pytorch torchvision torchaudio -c pytorch
+conda install -y numpy matplotlib && \
+conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
 ### 2. Training the model
-Run the training script (only baseline for now)
+Run the training script (only **baseline** for now)
 ```sh
 python src/main.py
 ```
@@ -67,6 +66,6 @@ Evaluate model predictions and compare against baselines: TBD
 
 ## Contributors
 - Paul Hellegouarch
-- Jules Talbourdet
+- Jules Talbourdet (primary contributor)
 
 
