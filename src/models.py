@@ -1,0 +1,3 @@
+# TODO: idea 1 - use the xlms boxes and turn them into a mask (so we get a weak traget) - will have to refine/create the data class...
+
+# TODO: idea 2 - use the class ids (to do class activation maps). still unsure how. need more info. idea: train a classifier on the id and generate a psuedo mask

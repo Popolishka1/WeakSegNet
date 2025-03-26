@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+# TODO: add some other baselines (e.g. Deeplabv3 is quite popular)
+# TODO: could also try a variation of the UNet? Saw that UNet++ might be good as well
+
 ########################################################################################
 # I took the baseline from: https://arc-celt.github.io/pet-segmentation/ (thanks Carl) #
 ########################################################################################

@@ -41,6 +41,8 @@ class OxfordPet(Dataset):
         processed[(mask == 1) | (mask == 3)] = 1  
         return processed
     
+    # TODO: think on how to include the xlms frames to do weak supervision
+
     def __getitem__(self, idx):
         sample = self.samples[idx]
         name = sample["name"]

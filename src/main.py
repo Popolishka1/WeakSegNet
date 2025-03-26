@@ -5,6 +5,7 @@ from fit import fit_adam
 from baseline import PetUNet
 from dataset import data_loading
 from metrics import evaluate_model
+from visualization import visualize_predictions
 from utilities import load_device, clear_cuda_cache
 
 if __name__ == "__main__":
@@ -19,7 +20,7 @@ if __name__ == "__main__":
     # Load the data #
     #################
     image_size = 256
-    batch_size_train, batch_size_val, batch_size_test = 16, 16, 16
+    batch_size_train, batch_size_val, batch_size_test = 128, 32, 128
     val_split = 0.2
     train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = data_loading(
                                                                         path=FILE_PATH,
@@ -45,10 +46,10 @@ if __name__ == "__main__":
                 loss_fn=loss_fn,
                 n_epochs=n_epochs,
                 lr=lr,
-                trainloader=train_loader,
-                valloader=val_loader,
+                train_loader=train_loader,
+                val_loader=val_loader,
                 device=DEVICE
-            )
+        )
         torch.save(baseline_model.state_dict(), "baseline_pet_unet.pth")
 
         ###########################
@@ -56,9 +57,24 @@ if __name__ == "__main__":
         ###########################
         clear_cuda_cache()
         baseline_model.to(DEVICE)
-        dice_score = evaluate_model(model=baseline_model, testloader=test_loader, device=DEVICE) 
+        dice_score, avg_accuracy = evaluate_model(model=baseline_model, test_loader=test_loader, device=DEVICE)
+
+        ################################
+        # Visualization of the results #
+        ################################
+        visualize_predictions(model=baseline_model, test_loader=test_loader, device=DEVICE)
 
     else:
+        ###########################
+        # Evaluation of the model #
+        ###########################
         clear_cuda_cache()
         baseline_model = PetUNet().to(DEVICE)
-        baseline_model.load_state_dict(torch.load("baseline_pet_unet.pth"))
+        baseline_model.load_state_dict(torch.load("baseline_pet_unet.pth", weights_only=True))
+
+        avg_dice, avg_accuracy = evaluate_model(model=baseline_model, test_loader=test_loader, device=DEVICE)
+
+        ################################
+        # Visualization of the results #
+        ################################
+        visualize_predictions(model=baseline_model, test_loader=test_loader, device=DEVICE)
