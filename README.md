@@ -27,6 +27,7 @@ In addition, we will explorethe following research questions to enhance the proj
 │   ├── annotations   
 │   ├── images
 ├── notebooks/          # Jupyter notebooks for experimentation
+├── results/
 ├── src/                # Codebase for WeakSegNet implementation
 │   ├── __init__.py 
 │   ├── baseline.py 
@@ -34,8 +35,9 @@ In addition, we will explorethe following research questions to enhance the proj
 │   ├── fit.py 
 │   ├── main.py 
 │   ├── metrics.py 
+│   ├── models.py 
 │   ├── utilities.py 
-├── results/
+│   ├── visualization.py 
 ├── .gitignore
 ├── README.md           # This file
 ```
@@ -51,7 +53,7 @@ conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c 
 ```
 
 ### 2. Training the model
-Run the training script (only **baseline** for now)
+Run the training script (only a **baseline** UNet for now. Set ``Train`` to True to train)
 ```sh
 python src/main.py
 ```
@@ -67,5 +69,3 @@ Evaluate model predictions and compare against baselines: TBD
 ## Contributors
 - Paul Hellegouarch
 - Jules Talbourdet (primary contributor)
-
-
