@@ -29,7 +29,7 @@ def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, device
                 axes[image_to_show, 0].imshow(img)
                 axes[image_to_show, 0].set_title("Original image") # TODO: include the name of the image maybe
                 axes[image_to_show, 1].imshow(gt_mask, cmap="gray")
-                axes[image_to_show, 1].set_title("Ground truth mask")
+                axes[image_to_show, 1].set_title("Ground truth mak")
                 axes[image_to_show, 2].imshow(pred_mask, cmap="gray")
                 axes[image_to_show, 2].set_title("Predicted mask")
 
