@@ -8,6 +8,8 @@ from metrics import evaluate_model
 from visualization import visualize_predictions
 from utilities import load_device, clear_cuda_cache
 
+# TODO: create some different wrapup functions for: 1. baseline computation 2. weakseg training
+ 
 if __name__ == "__main__":
 
     TRAIN = True # Set to True if you wish to train
@@ -16,16 +18,21 @@ if __name__ == "__main__":
     clear_cuda_cache()
 
     BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), "..")) # This is the repo directory: WeakSegNet/
-    FILE_PATH = os.path.join(BASE_DIR, "data", ) # This the directory of the data folder (with the annotations and images subfolders)
+    FILE_PATH = os.path.join(BASE_DIR, "data") # This the directory of the data folder (with the annotations and images subfolders)
     
     #################
     # Load the data #
     #################
     image_size = 256
-    batch_size_train, batch_size_val, batch_size_test = 64, 16, 64
+    batch_size_train, batch_size_val, batch_size_test = 1, 1, 1
     val_split = 0.2
+    FULLY_SUPERVISED = True
+    WEAKLY_SUPERVISED = False
+
     train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = data_loading(
                                                                         path=FILE_PATH,
+                                                                        fully_supervised=FULLY_SUPERVISED,
+                                                                        weakly_supervised=WEAKLY_SUPERVISED,
                                                                         image_size=image_size,
                                                                         batch_size_train=batch_size_train,
                                                                         batch_size_val=batch_size_val,
