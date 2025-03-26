@@ -71,6 +71,18 @@ class OxfordPet(Dataset):
             return image, mask
 
 
+def mask_to_tensor(mask):
+    # I found out that my code wasn't working because
+    # in the mask_transform definded below in the data_transform function, the transforms.ToTensor()
+    # transormation devides the 1 of the binary mask by 255
+    # Reason : ToTensor() converts images to tensor by / every pixel value by 255
+    # Solution : convert the PIL image to array  uint8 
+    # Resulst: we get the correct target :)
+    # TODO: maybe find a cleaner way to do it
+    mask_np = np.array(mask, dtype=np.uint8)
+    mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
+    return mask_tensor
+
 def data_transform(image_size: int = 224):
     # Define some transforms for the input images
     image_transform = transforms.Compose([
@@ -80,8 +92,8 @@ def data_transform(image_size: int = 224):
 
     # Define some transforms for the masks
     mask_transform = transforms.Compose([
-    transforms.Resize((image_size, image_size)),
-    transforms.ToTensor()
+    transforms.Resize((image_size, image_size), interpolation=Image.NEAREST ),# TODO: ensure discret label values are preserved after resiz
+    transforms.Lambda(lambda mask: mask_to_tensor(mask))
     ])
 
     return image_transform, mask_transform
