@@ -8,11 +8,12 @@ def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, device
     fig, axes = plt.subplots(n_samples, 3, figsize=(10, 3 * n_samples))
     
     with torch.no_grad():
-        for images, masks, _ in test_loader:
+        for images, true_masks, _ in test_loader:
             images = images.to(device)
-            masks = masks.to(device)
-            preds = model(images)
-            preds = (preds > threshold).float()
+            true_masks = true_masks.to(device)
+
+            outputs = model(images)
+            predicted_mask = (outputs > threshold).float()
 
             for i in range(images.size(0)):
                 if image_to_show >= n_samples:
@@ -23,8 +24,8 @@ def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, device
                     return
 
                 img = images[i].cpu().permute(1, 2, 0).numpy()
-                gt_mask = masks[i].cpu().squeeze().numpy()
-                pred_mask = preds[i].cpu().squeeze().numpy()
+                gt_mask = true_masks[i].cpu().squeeze().numpy()
+                pred_mask = predicted_mask[i].cpu().squeeze().numpy()
 
                 axes[image_to_show, 0].imshow(img)
                 axes[image_to_show, 0].set_title("Original image") # TODO: include the name of the image maybe

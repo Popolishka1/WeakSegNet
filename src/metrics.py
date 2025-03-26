@@ -1,20 +1,25 @@
 import torch
 
-def dice_score(preds, targets, threshold=0.5, eps=1e-7):
+def dice_score(output, true_mask, threshold=0.5, eps=1e-7):
     """
     One of the possible metric that we can use: dice score between predicted masks and ground truth.
     """
-    preds = (preds > threshold).float()
-    targets = targets.float()
-    intersection = (preds * targets).sum(dim=(1, 2, 3))
-    union = preds.sum(dim=(1, 2, 3)) + targets.sum(dim=(1, 2, 3))
+    predicted_mask = (output > threshold).float()
+    true_mask = true_mask.float()
+
+    intersection = (predicted_mask * true_mask).sum(dim=(1, 2, 3))
+    union = predicted_mask.sum(dim=(1, 2, 3)) + true_mask.sum(dim=(1, 2, 3))
+
     dice = (2 * intersection + eps) / (union + eps)
     return dice.mean().item()
 
 
-def pixel_accuracy(predicted_mask, target_mask, threshold=0.5):
-    predicted_mask = (predicted_mask > threshold).float()
-    correct = (predicted_mask == target_mask).float()
+def pixel_accuracy(output, true_mask, threshold=0.5):
+    predicted_mask = (output > threshold).float()
+    true_mask = true_mask.float()
+
+    correct = (predicted_mask == true_mask).float()
+
     accuracy = correct.sum(dim=(1, 2, 3)) / correct[0].numel()
     return accuracy.mean().item()
 
@@ -28,14 +33,14 @@ def evaluate_model(model, test_loader, device="cpu"):
     n_batches = len(test_loader)
 
     with torch.no_grad():
-        for images, masks, _ in test_loader:
+        for images, true_masks, _ in test_loader:
             images = images.to(device)
-            masks = masks.to(device)
+            true_masks = true_masks.to(device)
 
-            preds = model(images)
+            outputs = model(images)
 
-            dice = dice_score(preds, masks)
-            accuracy = pixel_accuracy(preds, masks)
+            dice = dice_score(outputs, true_masks)
+            accuracy = pixel_accuracy(outputs, true_masks)
 
             total_dice += dice
             total_accuracy += accuracy

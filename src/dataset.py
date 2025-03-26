@@ -100,7 +100,7 @@ def data_loading(path, image_size, batch_size_train, batch_size_val, batch_size_
     generator = torch.Generator().manual_seed(seed)
     train_dataset, val_dataset = random_split(full_trainval_dataset, [train_size, val_size], generator=generator)
 
-    # Load test 
+    # Load test dataset
     test_dataset = OxfordPet(data_dir=path, split="test", transform=image_transform, target_transform=mask_transform)
     
     # Train set, validation set & test set loader
@@ -108,8 +108,7 @@ def data_loading(path, image_size, batch_size_train, batch_size_val, batch_size_
     val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size_val, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size_test, shuffle=False)
 
-
     print("\n[Data loaded succesfully]")
-    print(f"Total train+val set: {total_size} - Train: {train_size} | Val: {val_size}")
+    print(f"Total train+val set: {total_size} -> Train: {train_size} | Val: {val_size}")
     print(f"Test set: {len(test_dataset)}")
     return train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader
