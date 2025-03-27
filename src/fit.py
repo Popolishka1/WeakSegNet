@@ -5,7 +5,7 @@ def fit_adam(model, loss_fn, n_epochs, lr, train_loader, val_loader, device="cpu
 
     print(f"\n----Fitting model with {n_epochs} epochs")
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
+    # TODO: learning rate schedule + weight decay
     for epoch in range(1, n_epochs + 1):
 
         # ------- TRAINING -------
@@ -23,8 +23,8 @@ def fit_adam(model, loss_fn, n_epochs, lr, train_loader, val_loader, device="cpu
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
-
+            train_loss += loss.item() 
+        # TODO: might be a good idea to include early stop (with dice/pix acc or val loss)
         avg_train_loss = train_loss / n_batches_train
 
         # ------- VALIDATION -------

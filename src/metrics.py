@@ -1,5 +1,6 @@
 import torch
 
+
 def dice_score(output, true_mask, threshold=0.5, eps=1e-7):
     """
     One of the possible metric that we can use: dice score between predicted masks and ground truth.
@@ -23,7 +24,9 @@ def pixel_accuracy(output, true_mask, threshold=0.5):
     accuracy = correct.sum(dim=(1, 2, 3)) / correct[0].numel()
     return accuracy.mean().item()
 
+
 # TODO: add other metrics: IoU (good for overlap), the good boy precision & recall maybe as well
+
 
 def evaluate_model(model, test_loader, device="cpu"):
     print("\n----Evaluating the model on the test set")

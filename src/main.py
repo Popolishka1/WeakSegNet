@@ -25,7 +25,7 @@ if __name__ == "__main__":
     #################
     image_size = 256
     batch_size_train, batch_size_val, batch_size_test = 1, 1, 1
-    val_split = 0.2
+    val_split = 0.2 # TODO: consider increasing
     FULLY_SUPERVISED = True
     WEAKLY_SUPERVISED = False
 
