@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from fit import fit_adam
-from baseline import PetUNet
+from baseline import UNet, DeepLabV3, FCN
 from dataset import data_loading
 from metrics import evaluate_model
 from visualization import visualize_predictions
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # Load the data #
     #################
     image_size = 256
-    batch_size_train, batch_size_val, batch_size_test = 1, 1, 1
+    batch_size_train, batch_size_val, batch_size_test = 32, 16, 32
     val_split = 0.2 # TODO: consider increasing
     FULLY_SUPERVISED = True
     WEAKLY_SUPERVISED = False
@@ -44,7 +44,11 @@ if __name__ == "__main__":
         #################
         # Fit the model # 
         #################
-        baseline_model = PetUNet(in_channels=3, out_channels=1).to(DEVICE)
+        baseline_model_UNet = UNet(in_channels=3, out_channels=1).to(DEVICE)
+        # baseline_model_DeepLabV3 = DeepLabV3().to(DEVICE)
+        # baseline_model_FCN = FCN().to(DEVICE)
+
+        baseline_model = baseline_model_UNet
 
         loss_fn = nn.BCELoss()
         n_epochs = 25
@@ -59,7 +63,7 @@ if __name__ == "__main__":
                 device=DEVICE
         )
         baseline_model.to(torch.device("cpu"))
-        torch.save(baseline_model.state_dict(), "baseline_pet_unet.pth")
+        torch.save(baseline_model.state_dict(), "baseline_unet.pth")
         clear_cuda_cache()
 
         ###########################
@@ -79,8 +83,12 @@ if __name__ == "__main__":
         ###########################
         # Evaluation of the model #
         ###########################
-        baseline_model = PetUNet()
-        state_dict = torch.load("baseline_pet_unet.pth", map_location=DEVICE, weights_only=True)
+        baseline_model_UNet = UNet()
+        # baseline_model_DeepLabV3 = DeepLabV3()
+        # baseline_model_FCN = FCN()
+
+        baseline_model = baseline_model_UNet
+        state_dict = torch.load("baseline_unet.pth", map_location=DEVICE, weights_only=True)
         baseline_model.load_state_dict(state_dict)
         baseline_model.to(DEVICE)
 

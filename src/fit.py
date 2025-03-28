@@ -4,8 +4,9 @@ import torch
 def fit_adam(model, loss_fn, n_epochs, lr, train_loader, val_loader, device="cpu"):
 
     print(f"\n----Fitting model with {n_epochs} epochs")
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    # TODO: learning rate schedule + weight decay
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5) # lr dynamic adjustment 
+
     for epoch in range(1, n_epochs + 1):
 
         # ------- TRAINING -------
@@ -44,5 +45,5 @@ def fit_adam(model, loss_fn, n_epochs, lr, train_loader, val_loader, device="cpu
         avg_val_loss = val_loss / n_batches_val
 
         print(f"[Epoch {epoch}/{n_epochs}] Train loss: {avg_train_loss:.4f} | Val loss: {avg_val_loss:.4f}")
-
+        scheduler.step(avg_val_loss) # adjust the lr
     print("[Training done]")

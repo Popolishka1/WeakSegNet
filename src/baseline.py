@@ -1,14 +1,10 @@
 import torch
 import torch.nn as nn
+import torchvision.models.segmentation as models
 
-
-# TODO: add some other baselines (e.g. Deeplabv3 is quite popular)
-# TODO: could also try a variation of the UNet? Saw that UNet++ might be good as well
-
-
-########################################################################################
-# I took the baseline from: https://arc-celt.github.io/pet-segmentation/ (thanks Carl) #
-########################################################################################
+##############################################################################################
+# I took the first baseline from: https://arc-celt.github.io/pet-segmentation/ (thanks Carl) #
+##############################################################################################
 
 
 # DoubleConv Block
@@ -27,11 +23,10 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-
-# UNet Model
-class PetUNet(nn.Module):
+# UNet model (encoder-decoder architecture) # TODO: variation of the UNet? See UNet++
+class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1):
-        super(PetUNet, self).__init__()
+        super(UNet, self).__init__()
         self.enc1 = DoubleConv(in_channels, 64)
         self.enc2 = DoubleConv(64, 128)
         self.enc3 = DoubleConv(128, 256)
@@ -59,3 +54,26 @@ class PetUNet(nn.Module):
         dec2 = self.dec2(torch.cat([self.up2(dec3), enc2], dim=1))
         dec1 = self.dec1(torch.cat([self.up1(dec2), enc1], dim=1))
         return torch.sigmoid(self.out_conv(dec1))
+
+
+class DeepLabV3(nn.Module):
+    def __init__(self, weights=models.DeepLabV3_ResNet50_Weights.DEFAULT):
+        super().__init__()
+        self.deeplab = models.deeplabv3_resnet50(weights=weights)
+        self.deeplab.classifier[4] = nn.Conv2d(256, 1, kernel_size=1) # small change here: we output one channel ie the mask
+
+    def forward(self, x):
+        out = self.deeplab(x)['out']
+        return torch.sigmoid(out) # sigmoid bc we want probabs
+    
+
+# Fully convolutional model 
+class FCN(nn.Module):
+    def __init__(self, weights=models.FCN_ResNet50_Weights.DEFAULT):
+        super().__init__()
+        self.fcn = models.fcn_resnet50(weights=weights)
+        self.fcn.classifier[4] = nn.Conv2d(512, 1, kernel_size=1) # same change here: output one channel ie the mask
+    
+    def forward(self, x):
+        out = self.fcn(x)['out']
+        return torch.sigmoid(out) # probas
