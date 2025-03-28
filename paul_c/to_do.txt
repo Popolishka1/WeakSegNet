@@ -1,0 +1,107 @@
+Things to look into: multiple instance, learning, class activation maps (CAMs), self-training, and consistency regularization.
+
+Definition WSSS: For weakly-supervised learning, only image-level labels and/or bounding box annotations will be used as primary supervision during training
+
+Ok le plan avant lundi c'est de faire le minimum viable product: 
+Minimum viable project: 
+• Formulate a specific weak supervision problem to address and justify its usefulness and feasibility.
+• Discuss and justify which weakly-supervised segmentation algorithm to use.
+o Use references and citations to support your choice.
+• Optionally, motivate, identify and collect additional weakly-labelled or unlabelled data.
+• Implement a weakly-supervised segmentation framework.
+• Design and conduct experiments for network comparisons, at least:
+o Compare the framework with baseline models trained using fully-supervised methods
+o Compare the benefits of the weak supervision, between different configurations of the
+framework (i.e. an ablation study by varying important hyperparameters).
+• Describing the implemented methods and conducted experiments.
+• Summarising obtained results and drawing conclusions.
+
+En gros ça ca va être ma To Do: 
+• Formulate a specific weak supervision problem to address and justify its usefulness and feasibility.
+'''
+Proposition 1: Urban Scene Segmentation for Autonomous Driving
+Problem Formulation:
+Develop a weakly supervised segmentation model that can delineate critical objects (e.g., vehicles, pedestrians, traffic signs) in urban driving scenes using only image-level labels or bounding box annotations. Rather than requiring full pixel-level annotations, the model leverages techniques such as Class Activation Maps (CAMs) and self-training to generate dense predictions.
+
+Justification:
+
+Usefulness: In autonomous driving, understanding the scene accurately is essential for safety. Reducing annotation costs while still achieving reliable segmentation supports rapid development and deployment.
+
+Feasibility: There are abundant datasets in the autonomous driving domain (like Cityscapes) where only partial or image-level annotations are available. Recent literature has shown promising results with weak supervision in similar contexts.
+'''
+
+
+• Discuss and justify which weakly-supervised segmentation algorithm to use.
+o Use references and citations to support your choice.
+• Optionally, motivate, identify and collect additional weakly-labelled or unlabelled data.
+'''
+Choice of Algorithm: CAM-Based Methods with Refinement
+Class Activation Maps (CAMs) as the Foundation
+A widely adopted strategy in weakly supervised segmentation starts with Class Activation Maps (CAMs). The CAM approach, introduced by Zhou et al. (2016), leverages image-level labels to generate coarse localization maps that highlight the discriminative regions used by a classifier. This makes it possible to extract initial segmentation seeds without the need for dense pixel-level annotations.
+
+Justification:
+
+Annotation Efficiency: CAMs only require image-level labels, dramatically reducing annotation costs compared to fully supervised methods.
+
+Proven Effectiveness: The technique has been extensively validated in numerous studies, showing promising performance in tasks where detailed annotations are not available.
+
+Refinement with the SEC Framework
+Once initial coarse masks are generated using CAMs, refinement is necessary to bridge the gap to high-quality segmentation. The "Seed, Expand and Constrain" (SEC) framework proposed by Kolesnikov and Lampert (2016) is an effective method for this purpose. The SEC framework works as follows:
+
+Seed: Use the CAM to obtain reliable but sparse object regions.
+
+Expand: Grow the initial seeds to cover more of the object using techniques such as region growing or affinity propagation.
+
+Constrain: Apply spatial or contextual constraints to ensure that the refined mask is consistent with the object boundaries.
+
+Justification:
+
+Robustness: The three-stage SEC approach improves over the basic CAM by progressively refining the coarse predictions into more accurate segmentation maps.
+
+Computational Feasibility: It strikes a balance between performance and complexity, which is ideal for a minimum required project.
+
+Several works have successfully combined CAMs with refinement strategies like SEC to tackle urban scene segmentation tasks, which supports its application in an autonomous driving context.
+
+Alternative Methods
+Another promising method is AffinityNet (Ahn and Kwak, 2018), which learns pixel affinities to refine initial CAM outputs. While AffinityNet has shown excellent performance, its training and implementation are somewhat more complex compared to the SEC approach. For a minimum required project, the simplicity and effectiveness of CAM+SEC make it a more manageable and justifiable choice.
+
+Comparison:
+
+Complexity: AffinityNet requires learning an additional network for pixel affinities, which might add complexity beyond the project's scope.
+
+Scalability: CAM+SEC has proven scalability in urban scenarios where real-time processing is beneficial.
+
+Additional Data: Weakly-Labeled and Unlabeled Data
+Data Sources for Urban Scene Segmentation
+1. Cityscapes Dataset (Weak Labels):
+Cityscapes is a well-known dataset that offers high-quality urban images. Although it contains pixel-level annotations, you can simulate a weakly supervised setting by using only image-level labels or bounding boxes extracted from these annotations. This can serve as both a benchmark and a source of weak labels.
+
+Motivation:
+
+It provides a real-world urban context that is directly applicable to autonomous driving tasks.
+
+The dataset is large and diverse, which can help in generalizing the model.
+
+2. Additional Unlabeled Data:
+You can also explore collecting additional urban scene images from publicly available repositories (e.g., online image databases or open datasets from municipal projects). Even if these images are unlabeled, they can be used in a semi-supervised framework where the initial CAM+SEC model generates pseudo-labels. These pseudo-labels can then be iteratively refined through self-training.
+
+Motivation:
+
+Increasing the volume of training data can help improve the robustness of the model.
+
+Unlabeled data, when combined with a pseudo-labeling strategy, can further reduce the need for costly manual annotations.
+
+Feasibility
+Implementation:
+
+The CAM+SEC framework can be implemented using widely available deep learning libraries (e.g., PyTorch or TensorFlow).
+
+Pre-trained classification models (such as ResNet or VGG) can be fine-tuned on urban scene images, leveraging transfer learning to accelerate the training process.
+
+Computational Resources:
+
+Given the relative simplicity of the method compared to full supervision, the computational requirements remain within the reach of standard research labs or even cloud-based solutions.
+
+Summary
+For the urban scene segmentation project aimed at autonomous driving, a CAM-based approach combined with the SEC refinement framework offers an optimal balance between simplicity, annotation efficiency, and segmentation performance. This method is well-supported by the literature (e.g., Zhou et al., 2016; Kolesnikov and Lampert, 2016) and can be effectively augmented with additional weakly labeled or unlabeled data (such as from Cityscapes) to further improve performance.
+'''
