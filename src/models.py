@@ -82,3 +82,13 @@ class FCN(nn.Module):
     def forward(self, x):
         out = self.fcn(x)['out']
         return torch.sigmoid(out) # probas
+    
+
+class PetClassifier(nn.Module): # TODO: simplify the main.py file to call the classifier (CE loss)
+    def __init__(self, num_classes=37):
+        super().__init__()
+        self.backbone = models.resnet50(pretrained=True)
+        self.backbone.fc = nn.Linear(self.backbone.fc.in_features, num_classes)
+
+    def forward(self, x):
+        return self.backbone(x)
