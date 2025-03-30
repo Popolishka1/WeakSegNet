@@ -1,79 +1,115 @@
+import os
 import torch
+import warnings
 import torch.nn as nn
-import torchvision.models.segmentation as models
+from fit import fit_adam
+from metrics import evaluate_model
+from models import UNet, DeepLabV3, FCN
+from dataset import data_loading, data_transform
+from visualization import visualize_predictions
+from utilities import load_device, clear_cuda_cache
 
-##############################################################################################
-# I took the first baseline from: https://arc-celt.github.io/pet-segmentation/ (thanks Carl) #
-##############################################################################################
+ 
+def baseline(baseline_name: str):
+    if baseline_name == "UNet":
+        return UNet()
+    if baseline_name == "DeepLabV3":
+        return  DeepLabV3()
+    if baseline_name == "FCN":
+        return FCN()
+    else:
+        warnings.warn("Incorrect baseline name or model not implemented.") 
 
 
-# DoubleConv Block
-class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DoubleConv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+if __name__ == "__main__":
+
+    TRAIN = True # Set to True if you wish to train
+
+    DEVICE = load_device()
+    clear_cuda_cache()
+
+    BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), "..")) # This is the repo directory: WeakSegNet/
+    FILE_PATH = os.path.join(BASE_DIR, "data") # This the directory of the data folder (with the annotations and images subfolders)
+    
+    #################
+    # Load the data #
+    #################
+
+    # Data splits: configure the size of the splits
+    batch_size_train, batch_size_val, batch_size_test = 64, 32, 64
+    val_split = 0.2 # TODO: consider increasing
+    size = (batch_size_train, batch_size_val, batch_size_test, val_split)
+
+    # Configure which data you wish to load
+    FULLY_SUPERVISED = True
+    WEAKLY_SUPERVISED, WEAKLY_SUPERVISED_BBOX_TO_MASK_DUMMY = False, False
+    experiment = (FULLY_SUPERVISED, WEAKLY_SUPERVISED, WEAKLY_SUPERVISED_BBOX_TO_MASK_DUMMY)
+
+    # Configure which data transformation you wish to load
+    image_size = 256
+    image_transform, mask_transform = data_transform(image_size=image_size)
+
+    _, _, _, train_loader, val_loader, test_loader = data_loading(path=FILE_PATH,
+                                                                  experiment=experiment,
+                                                                  image_transform=image_transform,
+                                                                  mask_transform=mask_transform,
+                                                                  size=size
+                                                                )
+
+    BASELINE_MODEL = "UNet"
+
+    if TRAIN:
+        #################
+        # Fit the model # 
+        #################
+
+        baseline_model = baseline(baseline_name=BASELINE_MODEL)
+        baseline_model.to(DEVICE)
+
+        loss_fn = nn.BCELoss()
+        n_epochs = 25
+        lr = 0.0001
+
+        fit_adam(model=baseline_model,
+                loss_fn=loss_fn,
+                n_epochs=n_epochs,
+                lr=lr,
+                train_loader=train_loader,
+                val_loader=val_loader,
+                device=DEVICE
         )
+        baseline_model.to(torch.device("cpu"))
+        torch.save(baseline_model.state_dict(), "test.pth")
+        clear_cuda_cache()
 
-    def forward(self, x):
-        return self.conv(x)
+        ###########################
+        # Evaluation of the model #
+        ###########################
+        baseline_model.to(DEVICE)
+        dice_score, avg_accuracy = evaluate_model(model=baseline_model, test_loader=test_loader, device=DEVICE)
+        clear_cuda_cache()
 
-# UNet model (encoder-decoder architecture) # TODO: variation of the UNet? See UNet++
-class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1):
-        super(UNet, self).__init__()
-        self.enc1 = DoubleConv(in_channels, 64)
-        self.enc2 = DoubleConv(64, 128)
-        self.enc3 = DoubleConv(128, 256)
-        self.enc4 = DoubleConv(256, 512)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.bottleneck = DoubleConv(512, 1024)
-        self.up4 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
-        self.dec4 = DoubleConv(1024, 512)
-        self.up3 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
-        self.dec3 = DoubleConv(512, 256)
-        self.up2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
-        self.dec2 = DoubleConv(256, 128)
-        self.up1 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
-        self.dec1 = DoubleConv(128, 64)
-        self.out_conv = nn.Conv2d(64, out_channels, kernel_size=1)
+        ################################
+        # Visualization of the results #
+        ################################
+        visualize_predictions(model=baseline_model, test_loader=test_loader, device=DEVICE)
+        clear_cuda_cache()
 
-    def forward(self, x):
-        enc1 = self.enc1(x)
-        enc2 = self.enc2(self.pool(enc1))
-        enc3 = self.enc3(self.pool(enc2))
-        enc4 = self.enc4(self.pool(enc3))
-        bottleneck = self.bottleneck(self.pool(enc4))
-        dec4 = self.dec4(torch.cat([self.up4(bottleneck), enc4], dim=1))
-        dec3 = self.dec3(torch.cat([self.up3(dec4), enc3], dim=1))
-        dec2 = self.dec2(torch.cat([self.up2(dec3), enc2], dim=1))
-        dec1 = self.dec1(torch.cat([self.up1(dec2), enc1], dim=1))
-        return torch.sigmoid(self.out_conv(dec1))
+    else:
+        ###########################
+        # Evaluation of the model #
+        ###########################
+        baseline_model = baseline(baseline_name=BASELINE_MODEL)
 
+        state_dict = torch.load("test.pth", map_location=DEVICE, weights_only=True)
+        baseline_model.load_state_dict(state_dict)
+        baseline_model.to(DEVICE)
 
-class DeepLabV3(nn.Module):
-    def __init__(self, weights=models.DeepLabV3_ResNet50_Weights.DEFAULT):
-        super().__init__()
-        self.deeplab = models.deeplabv3_resnet50(weights=weights)
-        self.deeplab.classifier[4] = nn.Conv2d(256, 1, kernel_size=1) # small change here: we output one channel ie the mask
+        avg_dice, avg_accuracy = evaluate_model(model=baseline_model, test_loader=test_loader, device=DEVICE)
+        clear_cuda_cache()
 
-    def forward(self, x):
-        out = self.deeplab(x)['out']
-        return torch.sigmoid(out) # sigmoid bc we want probabs
-    
-
-# Fully convolutional model 
-class FCN(nn.Module):
-    def __init__(self, weights=models.FCN_ResNet50_Weights.DEFAULT):
-        super().__init__()
-        self.fcn = models.fcn_resnet50(weights=weights)
-        self.fcn.classifier[4] = nn.Conv2d(512, 1, kernel_size=1) # same change here: output one channel ie the mask
-    
-    def forward(self, x):
-        out = self.fcn(x)['out']
-        return torch.sigmoid(out) # probas
+        ################################
+        # Visualization of the results #
+        ################################
+        visualize_predictions(model=baseline_model, test_loader=test_loader, device=DEVICE)
+        clear_cuda_cache()

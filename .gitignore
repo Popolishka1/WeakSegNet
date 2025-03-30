@@ -2,3 +2,5 @@
 *.jpg
 *.xml
 *.gz
+*.pyc
+*.pth
