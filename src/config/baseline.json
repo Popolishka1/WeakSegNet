@@ -1,16 +1,18 @@
 {
   "data_folder": "data",
-  "batch_size_train": 64,
-  "batch_size_val": 32,
-  "batch_size_test": 64,
+
+  "train_batch_size": 64,
+  "val_batch_size": 32,
+  "test_batch_size": 64,
   "val_split": 0.2,
-  "fully_supervised": true,
-  "weakly_supervised": false,
-  "weakly_supervised_bbox_to_mask_dummy": false,
+
   "image_size": 256,
-  "baseline_model": "UNet",
+
+  "baseline_segmentation_model": "UNet",
   "n_epochs": 25,
   "learning_rate": 0.0001,
-  "train": true,
-  "save_path": "baseline.pth"
+
+  "train": false,
+
+  "save_path": "src/models/baseline_UNet.pth"
 }

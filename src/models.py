@@ -1,15 +1,6 @@
-# TODO: idea 1 - use the xlms boxes and turn them into a mask (so we get a weak traget) - will have to refine/create the data class...
-
-# TODO: idea 2 - use the class ids (to do class activation maps). still unsure how. need more info. idea: train a classifier on the id and generate a psuedo mask
-
-
 import torch
 import torch.nn as nn
 import torchvision.models.segmentation as models
-
-##############################################################################################
-# I took the first baseline from: https://arc-celt.github.io/pet-segmentation/ (thanks Carl) #
-##############################################################################################
 
 
 # DoubleConv Block
@@ -28,6 +19,7 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
+# Baseline from: https://arc-celt.github.io/pet-segmentation/
 # UNet model (encoder-decoder architecture) # TODO: variation of the UNet? See UNet++
 class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1):
@@ -82,13 +74,3 @@ class FCN(nn.Module):
     def forward(self, x):
         out = self.fcn(x)['out']
         return torch.sigmoid(out) # probas
-    
-
-class PetClassifier(nn.Module): # TODO: simplify the main.py file to call the classifier (CE loss)
-    def __init__(self, num_classes=37):
-        super().__init__()
-        self.backbone = models.resnet50(pretrained=True)
-        self.backbone.fc = nn.Linear(self.backbone.fc.in_features, num_classes)
-
-    def forward(self, x):
-        return self.backbone(x)

@@ -8,24 +8,19 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 
 class OxfordPet(Dataset):
-
     def __init__(self,
                  data_dir,
                  split,
-                 transform=None,
-                 target_transform=None,
-                 fully_supervised=True,
-                 weakly_supervised=False,
-                 weakly_supervised_bbox_to_mask_dummy = False
+                 image_transform=None,
+                 mask_transform=None,
+                 load_bbox = False
                  ):
         
         self.data_dir = data_dir
         self.split = split
-        self.transform = transform
-        self.target_transform = target_transform
-        self.fully_supervised = fully_supervised
-        self.weakly_supervised = weakly_supervised
-        self.weakly_supervised_bbox_to_mask_dummy = weakly_supervised_bbox_to_mask_dummy
+        self.image_transform = image_transform
+        self.mask_transform = mask_transform
+        self.load_bbox = load_bbox
 
         split_file = os.path.join(data_dir, "annotations", f"{split}.txt")
         print("Loading split from:", split_file)
@@ -33,12 +28,12 @@ class OxfordPet(Dataset):
         with open(split_file, "r") as f:
             lines = f.readlines()
 
-        self.samples = [] # TODO: fix following issue: the train/validation split randomly split the images and the masks but not the samples id
+        self.samples = []
         for line in lines:
             name, class_id, species, breed_id = line.strip().split()
             
             # Check if XML exists
-            if weakly_supervised and weakly_supervised_bbox_to_mask_dummy:
+            if load_bbox:
                 xml_path = os.path.join(data_dir, "annotations", "xmls", f"{name}.xml")
                 if not os.path.exists(xml_path):
                     continue # if no bbox: skip sample
@@ -56,12 +51,16 @@ class OxfordPet(Dataset):
 
     @staticmethod
     def preprocess_mask(trimap):
+        """Converts the trimap to a binary mask (1 for pet pixels, 0 for background)."""
         processed_mask = np.zeros_like(trimap, dtype=np.uint8)
-        processed_mask[(trimap == 1) | (trimap == 3)] = 1  
+        processed_mask[(trimap == 1) | (trimap == 3)] = 1 # TODO: refine this to process the frontier pixels
         return processed_mask
     
     @staticmethod
     def read_xml_file(path):
+        """Reads the XML file and returns the first bounding box as (xmin, xmax, ymin, ymax)."""
+        if not os.path.exists(path):
+            return None
         root = et.parse(path).getroot()
         bounding_box = []
         for box_attributes in root.findall('object'):
@@ -71,110 +70,78 @@ class OxfordPet(Dataset):
             y_min = int(box.find('ymin').text)
             y_max = int(box.find('ymax').text)
             bounding_box.append((x_min, x_max, y_min, y_max))
-        return bounding_box 
+        return bounding_box[0] if bounding_box else None
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
         name = sample["name"]
 
-        img_path = os.path.join(self.data_dir, "images", f"{name}.jpg")
+        # Load and transform input image
+        image_path = os.path.join(self.data_dir, "images", f"{name}.jpg")
+        image = Image.open(image_path).convert("RGB")
 
-        image = Image.open(img_path).convert("RGB")
-        image_size = image.size
+        if self.image_transform:
+            image = self.image_transform(image)
+        
+        # Load, preprocess and transform ground truth mask
+        trimap_path = os.path.join(self.data_dir, "annotations", "trimaps", f"{name}.png")
+        trimap = np.array(Image.open(trimap_path))
+        gt_mask = Image.fromarray(self.preprocess_mask(trimap))
+        if self.mask_transform:
+            gt_mask = self.mask_transform(gt_mask)
 
-        if self.transform:
-            image = self.transform(image)
-
+        # Build info dictionary with IDs and bounding box (if applicable)
         info = {
             "name": name,
             "class_id": sample["class_id"],
             "species_id": sample["species_id"],
             "breed_id": sample["breed_id"]
         }
-        
-        if self.fully_supervised:
-            mask_path = os.path.join(self.data_dir, "annotations", "trimaps", f"{name}.png")
-            trimap = np.array(Image.open(mask_path))
-            mask = Image.fromarray(self.preprocess_mask(trimap=trimap))
 
-            if self.target_transform:
-                mask = self.target_transform(mask)
-            
-            return image, mask, info
-        
-        if self.weakly_supervised:
-            bounding_box_path = os.path.join(self.data_dir, "annotations", "xmls", f"{name}.xml")
-            bounding_box = self.read_xml_file(path=bounding_box_path)
-            info["bbox"] = bounding_box[0]
+        if self.load_bbox:
+            xml_path = os.path.join(self.data_dir, "annotations", "xmls", f"{name}.xml")
+            info["bbox"] = self.read_xml_file(xml_path)
 
-            if self.weakly_supervised_bbox_to_mask_dummy:
-                dummy_mask = generate_mask(image_size, bounding_box[0])
-                if self.target_transform:
-                    dummy_mask = self.target_transform(dummy_mask)
-                return image, dummy_mask, info
-    
-            else:
-                return image, info
-
-
-def generate_mask(image_size, bounding_box: tuple):
-    """This function takes as an argument an image + the bbox and generates the corresponding weak mask"""
-    height, width = image_size
-    mask_np = np.zeros((width, height), dtype=np.uint8)
-    xmin, xmax, ymin, ymax = map(int, bounding_box)
-    mask_np[ymin:ymax, xmin:xmax] = 1
-    mask = Image.fromarray(mask_np)
-    return mask
+        return image, gt_mask, info
 
 
 def mask_to_tensor(mask):
-    # I found out that my code wasn't working because
-    # in the mask_transform definded below in the data_transform function, the transforms.ToTensor()
-    # transormation devides the 1 of the binary mask by 255
-    # Reason : ToTensor() converts images to tensor by / every pixel value by 255
-    # Solution : convert the PIL image to array  uint8 
-    # Resulst: we get the correct target :)
-    # TODO: maybe find a cleaner way to do it
     mask_np = np.array(mask, dtype=np.uint8)
     mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
     return mask_tensor
 
 
 def data_transform(image_size: int = 224):
-    # Define some transforms for the input images (fully supervised case)
+    # Define some transforms for the input images
     image_transform = transforms.Compose([
     transforms.Resize((image_size, image_size)),
     transforms.ToTensor()
-    ]) # TODO: start to think about some data augmentation (might be more relevent for weakseg)
+    ]) # TODO: start to think about some data augmentation
 
-    # Define some transforms for the masks
+    # Define some transforms for the ground truth masks
     mask_transform = transforms.Compose([
     transforms.Lambda(lambda mask: mask_to_tensor(mask)),
-    transforms.Resize((image_size, image_size), interpolation=Image.NEAREST), # TODO: ensure discret label values are preserved after resiz
+    transforms.Resize((image_size, image_size), interpolation=Image.NEAREST),
     ])
-
     return image_transform, mask_transform
 
 
 def data_loading(path,
-                 experiment,
+                 data_split_size,
                  image_transform,
                  mask_transform,
-                 size,
+                 load_bbox: bool = False,
                  seed: int = 42
                  ):
     print("\n----Loading data")
-    fully_supervised, weakly_supervised, weakly_supervised_bbox_to_mask_dummy = experiment
-    batch_size_train, batch_size_val, batch_size_val, val_split = size
+    batch_size_train, batch_size_val, batch_size_val, val_split = data_split_size
 
-    # Load train+val dataset
+    # Load train & val dataset
     full_trainval_dataset = OxfordPet(data_dir=path,
                                       split="trainval",
-                                      transform=image_transform,
-                                      target_transform=mask_transform,
-                                      fully_supervised=fully_supervised,
-                                      weakly_supervised=weakly_supervised,
-                                      weakly_supervised_bbox_to_mask_dummy=weakly_supervised_bbox_to_mask_dummy
+                                      image_transform=image_transform,
+                                      mask_transform=mask_transform,
+                                      load_bbox=load_bbox
                                       )
     
     total_size = len(full_trainval_dataset)
@@ -187,14 +154,12 @@ def data_loading(path,
     # Load test dataset
     test_dataset = OxfordPet(data_dir=path,
                              split="test",
-                             transform=image_transform,
-                             target_transform=mask_transform,
-                             fully_supervised=True,
-                             weakly_supervised=False,
-                             weakly_supervised_bbox_to_mask_dummy=False
+                             image_transform=image_transform,
+                             mask_transform=mask_transform,
+                             load_bbox=load_bbox
                              )
     
-    # Train set, validation set & test set loader
+    # Train, val & test loaders
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size_train, shuffle=True)
     val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size_val, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size_val, shuffle=False)
