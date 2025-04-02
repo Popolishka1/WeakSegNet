@@ -5,13 +5,13 @@ import argparse
 import warnings
 from torch.utils.data import DataLoader
 
-from src.classification import ResNet
 from src.models import UNet, DeepLabV3, FCN
 from src.cam_utils import generate_pseudo_masks
 from src.utils import load_device, clear_cuda_cache
 from src.dataset import data_loading, PseudoMaskDataset
 from src.fit import fit_segmentation, fit_classification
 from src.metrics import evaluate_model, evaluate_classifier
+from src.classification import ResNet50, DenseNet121, ResNet101
 from src.visualization import visualize_predictions, visualize_cams
 
 
@@ -47,8 +47,12 @@ def load_data_wrapper(config):
 
 
 def select_classifier(model_name, n_classes):
-    if model_name == "ResNet":
-        return ResNet(n_classes=n_classes)
+    if model_name == "ResNet50":
+        return ResNet50(n_classes=n_classes)
+    if model_name == "ResNet101":
+        return ResNet101(n_classes=n_classes)
+    if model_name == "DenseNet12":
+        return DenseNet121(n_classes=n_classes)
     else:
         warnings.warn("Incorrect classifier name or model not implemented.")
         return None
@@ -99,7 +103,7 @@ def main():
     clear_cuda_cache()
     
     # 1. Load dataset (train, val, and test loaders)
-    _, _, _, train_loader, val_loader, test_loader = load_data_wrapper(config)
+    train_loader, val_loader, test_loader = load_data_wrapper(config)
 
     # 2. Train classifier
     # 2.1. Select and init classifier
@@ -138,7 +142,7 @@ def main():
                                          cam_threshold=cam_threshold,
                                          device=device
                                         )
-
+    # TODO: refine CAM with dense CRF for instance to get better pseudo masks
     train_dataset_pseudo = PseudoMaskDataset(train_loader.dataset, pseudo_masks)
     train_loader_pseudo = DataLoader(train_dataset_pseudo,  batch_size=config["train_batch_size"], shuffle=True, num_workers=4)
     assert len(pseudo_masks) == len(train_loader.dataset), "Mismatched pseudo masks!"
@@ -173,7 +177,7 @@ def main():
 
     # 5. Evaluate and visualize results
     evaluate_model(model=segmentation_model, test_loader=test_loader, device=device)
-    visualize_predictions(model=segmentation_model, test_loader=test_loader, device=device)
+    visualize_predictions(model=segmentation_model, test_loader=test_loader, device=device) # TODO: add saving path in cfg
     clear_cuda_cache()
 
 

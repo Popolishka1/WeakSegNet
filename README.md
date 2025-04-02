@@ -36,7 +36,8 @@ In addition, we will explorethe following research questions to enhance the proj
 │   ├── classification.py   # Classification network architectures
 │   ├── dataset.py          # Data loading and preprocessing (transformations/augmentations) for the Oxford-IIIT Pet dataset
 │   ├── fit.py              # Training loop for optimizing model parameters (classifier, segmentation model, ...)
-│   ├── metrics.py          # Functions for evaluating segmentation performance (Dice score, pixel accuracy, ...) and classifier accuracy
+│   ├── fm_utils.py         # Generate weak mask from foundation models
+│   ├── metrics.py          # Functions for evaluating segmentation model performance and classifier accuracy
 │   ├── models.py           # Various network architectures (UNet, DeepLabV3, FCN, RedNet, ...)
 │   ├── utils.py            # Helper functions for device management and resource cleanup
 │   ├── visualization.py    # Visualization tools
@@ -44,10 +45,11 @@ In addition, we will explorethe following research questions to enhance the proj
 ├── baseline.py             # Baselines (fully supervised use case)
 ├── main_bbox.py            # Weak supervision segmentation (bbox) experiments
 ├── main_cam.py             # Weak supervision segmentation (CAM) experiments
+├── main_fm.py              # Weak supervision segmentation (FM) experiments
 ├── README.md               # This file
 ```
 
-## Getting started
+## Getting started and running the code
 
 ### 1️. Environment setup
 Create a conda env and install dependencies:
@@ -59,7 +61,7 @@ conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c 
 conda install -y -c conda-forge opencv
 ```
 
-### 2. Baselines (fully supervised usecase)
+### 2. Baselines (fully supervised use case)
 Run the baseline script with the desired config (stored in a .json file in ``src\config``` **Modify the config to change the parameters**)
 ```sh
 python python baseline.py --config .\src\config\baseline.json
@@ -71,10 +73,16 @@ Run the main script with the desired config (stored in a .json file in ``src\con
 python python main_cam.py --config .\src\configs\main_cam.json
 ```
 
-### 4. Weak supervision segmentation : Bounding Box
+### 4. Weak supervision segmentation : Bounding Box (not yet done....)
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_bbox.py --config .\src\configs\main_bbox.json
+```
+
+### 4. Weak supervision segmentation : Foundation Models (not yet done....)
+Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
+```sh
+python python main_fm.py --config .\src\configs\main_fm.json
 ```
 
 ## References & resources

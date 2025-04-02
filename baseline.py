@@ -76,7 +76,7 @@ def main():
     clear_cuda_cache()
     
     # 1. Load dataset (train, val, and test loaders)
-    _, _, _, train_loader, val_loader, test_loader = load_data_wrapper(config)
+    train_loader, val_loader, test_loader = load_data_wrapper(config)
     
     # 2. Train baseline segmentation model (fully supervised)
     # 2.1. Select and init baseline segmentation model
@@ -100,7 +100,7 @@ def main():
     
     # 3. Evaluate and visualize results
     evaluate_model(model=baseline_segmentation_model, test_loader=test_loader, device=device)
-    visualize_predictions(model=baseline_segmentation_model, test_loader=test_loader, device=device)
+    visualize_predictions(model=baseline_segmentation_model, test_loader=test_loader, device=device) # TODO: add saving path in cfg
     clear_cuda_cache()
 
 

@@ -74,3 +74,5 @@ class FCN(nn.Module):
     def forward(self, x):
         out = self.fcn(x)['out']
         return torch.sigmoid(out) # probas
+    
+# TODO: consider ResNet101 instead of ResNet50 for the backbone of DeepLabV3 and FCN

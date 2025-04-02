@@ -155,7 +155,9 @@ def data_transform(image_size: int = 256, train: bool = True):
             # transforms.RandomHorizontalFlip(p=0.5), # TODO: find a way to synchronize this with the mask
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]
+        ] 
+        # TODO: I have a clue finally: use this pytorch package from torchvision.transforms import v2
+        # https://pytorch.org/vision/main/auto_examples/transforms/plot_transforms_getting_started.html 
         
         # For masks - same flip (syncronized with image) but no color jitter
         mask_transforms = [
@@ -171,8 +173,10 @@ def data_transform(image_size: int = 256, train: bool = True):
 
 
 def inverse_normalize(tensor):
-    """Reverse normalization for visualization."""
-    # TODO: be careful, if you change normalization values in data_transform, change them here too
+    """
+    Reverse normalization for visualization.
+    Be careful, if you change normalization values in data_transform(), change them here too.
+    """
     inv_normalize = transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225], std=[1/0.229, 1/0.224, 1/0.225])
     return inv_normalize(tensor)
 
@@ -228,9 +232,9 @@ def data_loading(path: str,
     val_dataset = Subset(full_val_dataset, val_indices) # Uses val transforms
     
     # Create train, val & test loaders
-    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=4)
 
     print("[Data loaded succesfully]")
     print(f"\nTrain set: {len(train_dataset)}")
