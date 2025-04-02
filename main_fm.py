@@ -1,1 +1,1 @@
-# TODO: implement main weakseg with foundation models (Carl?)
+# TODO (Carl): implement main weakseg with foundation models

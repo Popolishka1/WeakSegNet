@@ -29,7 +29,7 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cpu"
             optimizer.step()
 
             train_loss += loss.item() 
-        avg_train_loss = train_loss / n_batches_train # TODO: might be a good idea to include early stop (with dice/pix acc or val loss)
+        avg_train_loss = train_loss / n_batches_train # TODO all: might be a good idea to include early stop (with dice/pix acc or val loss)
 
         # ------- VALIDATION -------
         model.eval()
@@ -69,7 +69,7 @@ def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, devic
 
         for images, _, info in train_loader:
             images = images.to(device)
-            labels = info["breed_id"].clone().detach().to(device) # TODO: generalize this function and make the target ID an argument of the function
+            labels = info["breed_id"].clone().detach().to(device) # TODO (Paul): generalize this function and make the target ID an argument of the function
 
             outputs = classifier(images)
             loss = criterion(outputs, labels)
@@ -79,7 +79,7 @@ def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, devic
             optimizer.step()
 
             train_loss += loss.item() 
-        avg_train_loss = train_loss / n_batches_train # TODO: same, might be a good idea to include early stop (with acc or val loss)
+        avg_train_loss = train_loss / n_batches_train # TODO all: same, might be a good idea to include early stop (with acc or val loss)
 
         # ------- VALIDATION -------
         classifier.eval()

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-# TODO: find a way to refine cams to get better pseudo masks (dense CRF for instance)
+# TODO (all): find a way to refine cams to get better pseudo masks (dense CRF for instance)
 
 class CAMGenerator:
     def __init__(self, classifier):
@@ -9,7 +9,7 @@ class CAMGenerator:
         self.feature_maps = None
         self.hook = self.classifier.backbone.layer4.register_forward_hook(self.hook_feature)
         # self.hook = self.classifier.backbone.features.register_forward_hook(self.hook_feature) for DenseNet121
-        # TODO: adapt the architecture so it suits multiple classifiers
+        # TODO (Paul): adapt the architecture so it suits multiple classifiers
 
     def hook_feature(self, module, input, output):
         self.feature_maps = output.detach()
@@ -28,7 +28,7 @@ def generate_cam(cam_generator, input_image, target_class=None):
     # Get weights from final FC layer
     weights = cam_generator.classifier.backbone.fc.weight[target_class]
     # weights = self.classifier.backbone.classifier.weight[target_class]  for DenseNet121
-    # TODO: same as above
+    # TODO (Paul): same as above
     
     # Compute CAM
     features = cam_generator.feature_maps.squeeze()

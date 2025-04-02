@@ -25,7 +25,7 @@ def pixel_accuracy(output, gt_mask, threshold=0.5):
     return accuracy.mean().item()
 
 
-# TODO: add other metrics: IoU (good for overlap) and precision & recall
+# TODO (all): add other metrics: IoU (good for overlap) and precision & recall
 
 
 def evaluate_model(model, test_loader, device="cpu"):

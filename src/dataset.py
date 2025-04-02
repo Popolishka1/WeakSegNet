@@ -46,7 +46,7 @@ class OxfordPet(Dataset):
     def preprocess_mask(trimap):
         """Converts the trimap to a binary mask (1 for pet pixels, 0 for background)."""
         processed_mask = np.zeros_like(trimap, dtype=np.uint8)
-        processed_mask[(trimap == 1) | (trimap == 3)] = 1 # TODO: refine this to process the frontier pixels (3)
+        processed_mask[(trimap == 1) | (trimap == 3)] = 1 # TODO (all): refine this to process the frontier pixels (3)
         return processed_mask
     
     @staticmethod
@@ -125,7 +125,7 @@ def data_transform(image_size: int = 256, train: bool = True):
     The syncronization of the augmentations are done in the Dataset class (OxfordPet),
     with torch.set_rng_state() and torch.get_rng_state().
     """
-    # TODO: consider separating transformations/augmentations for each task (segmentation/classification/CAM)
+    # TODO (Paul): consider separating transformations/augmentations for each task (segmentation/classification/CAM)
 
     # Function to convert PIL mask to tensor. Don't use ToTensor() directly on PIL. See the documentation of ToTensor()
     def mask_to_tensor(mask):
@@ -147,7 +147,7 @@ def data_transform(image_size: int = 256, train: bool = True):
     ]
 
     # Training-specific augmentations
-    if train: # TODO: find other augmentations
+    if train: # TODO (all): find other augmentations
         # For images
         image_transforms = [
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
@@ -156,7 +156,7 @@ def data_transform(image_size: int = 256, train: bool = True):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ] 
-        # TODO: I have a clue finally: use this pytorch package from torchvision.transforms import v2
+        # TODO (Paul): I have a clue finally: use this pytorch package from torchvision.transforms import v2
         # https://pytorch.org/vision/main/auto_examples/transforms/plot_transforms_getting_started.html 
         
         # For masks - same flip (syncronized with image) but no color jitter
