@@ -11,7 +11,7 @@ from src.models import UNet, DeepLabV3, FCN
 from src.visualization import visualize_predictions
 from src.utils import load_device, clear_cuda_cache
 
-
+# TODO: wrap up in utils.py
 def parse_args():
     parser = argparse.ArgumentParser(description="Baseline segmentation training and evaluation (fully supervised use case)")
     parser.add_argument("--config",
@@ -25,7 +25,7 @@ def parse_args():
         config = json.load(f)
     return config
 
-
+# TODO: wrap up in data.py
 def load_data_wrapper(config):
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
@@ -42,7 +42,7 @@ def load_data_wrapper(config):
     
     return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size)
 
-
+# TODO: wrap up in models.py
 def select_baseline_segmentation_model(model_name):
     if model_name == "UNet":
         return UNet()
@@ -54,7 +54,7 @@ def select_baseline_segmentation_model(model_name):
         warnings.warn("Incorrect baseline name or model not implemented.")
         return None
 
-
+# TODO: wrap up in fit.py
 def train_model_segmentation(model, train_loader, val_loader, config, device):
     n_epochs = config["n_epochs"]
     lr = config["learning_rate"]

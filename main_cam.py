@@ -14,7 +14,7 @@ from src.metrics import evaluate_model, evaluate_classifier
 from src.classification import ResNet50, DenseNet121, ResNet101
 from src.visualization import visualize_predictions, visualize_cams
 
-
+# TODO: wrap up in utils.py
 def parse_args():
     parser = argparse.ArgumentParser(description="Weak supervision segmentation training and evaluation (CAM use case)")
     parser.add_argument("--config",
@@ -28,7 +28,7 @@ def parse_args():
         config = json.load(f)
     return config
 
-
+# TODO: wrap up in data.py
 def load_data_wrapper(config):
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
@@ -45,7 +45,7 @@ def load_data_wrapper(config):
     
     return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size)
 
-
+# TODO: wrap up in classification.py
 def select_classifier(model_name, n_classes):
     if model_name == "ResNet50":
         return ResNet50(n_classes=n_classes)
@@ -57,7 +57,7 @@ def select_classifier(model_name, n_classes):
         warnings.warn("Incorrect classifier name or model not implemented.")
         return None
 
-
+# TODO: wrap up in classification.py
 def train_classifier(classifier, train_loader, val_loader, config, device):
     n_epochs = config["n_epochs_cls"]
     lr = config["learning_rate_cls"]
@@ -69,7 +69,7 @@ def train_classifier(classifier, train_loader, val_loader, config, device):
              device=device)
     return classifier
 
-
+# TODO: wrap up in model.py (merge with the other function in baseline.py)
 def select_segmentation_model(model_name):
     if model_name == "UNet":
         return UNet()
@@ -81,7 +81,7 @@ def select_segmentation_model(model_name):
         warnings.warn("Incorrect model name or model not implemented.")
         return None
 
-
+# TODO: wrap up in fit.py
 def train_segmentation_model(model, train_loader, val_loader, config, device):
     n_epochs = config["n_epochs_seg"]
     lr = config["learning_rate_seg"]
@@ -107,12 +107,14 @@ def main():
 
     # 2. Train classifier
     # 2.1. Select and init classifier
+    # TODO: wrap up
     classifier = select_classifier(config["classifier"], config["n_classes"])
     if classifier is None:
         return
     classifier.to(device)
 
     # 2.2. Train or load classifier
+    # TODO: wrap up
     if config["train_classifier"]:
         print("\n----Training classifier...")
         classifier = train_classifier(classifier,
@@ -135,6 +137,7 @@ def main():
     evaluate_classifier(classifier=classifier, test_loader=test_loader, device=device)
 
     # 3. Generate pseudo masks
+    # TODO: wrap up the mask gen + viz
     cam_threshold = config["cam_threshold"]
     print(f"\n----Generating pseudo masks from CAM with cam_threshold={cam_threshold}...")
     pseudo_masks = generate_pseudo_masks(classifier=classifier,
@@ -142,15 +145,16 @@ def main():
                                          cam_threshold=cam_threshold,
                                          device=device
                                         )
-    # TODO: refine CAM with dense CRF for instance to get better pseudo masks
+
     train_dataset_pseudo = PseudoMaskDataset(train_loader.dataset, pseudo_masks)
     train_loader_pseudo = DataLoader(train_dataset_pseudo,  batch_size=config["train_batch_size"], shuffle=True, num_workers=4)
     assert len(pseudo_masks) == len(train_loader.dataset), "Mismatched pseudo masks!"
     print(f"[Generated {len(pseudo_masks)} pseudo masks]")
 
-    visualize_cams(classifier=classifier, test_loader=test_loader, device=device, cam_threshold=cam_threshold, save_path="cam_examples.png")
+    visualize_cams(classifier=classifier, test_loader=test_loader, device=device, cam_threshold=cam_threshold, save_path="cam_examples.png") # TODO: add saving path in cfg
 
     # 4. Train segmentation model (weakly supervised)
+    # TODO: wrap up 
     # 4.1 Select and init baseline segmentation model
     segmentation_model = select_segmentation_model(config["segmentation_model"])
     if segmentation_model is None:

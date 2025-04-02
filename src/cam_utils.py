@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-# TODO: find a way to refine cams
+# TODO: find a way to refine cams to get better pseudo masks (dense CRF for instance)
 
 class CAMGenerator:
     def __init__(self, classifier):
