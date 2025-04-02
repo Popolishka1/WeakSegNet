@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cpu"):
-    print(f"\n----Fitting segmentation model with {n_epochs} epochs")
+    print(f"--Fitting segmentation model with {n_epochs} epochs")
 
     criterion = nn.BCELoss()
     
@@ -51,9 +51,9 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cpu"
         scheduler.step(avg_val_loss) # adjust the lr
     print("[Segmentation training done]")
 
-# TODO: this will be useful for CAM classification
+
 def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, device="cpu"):
-    print(f"\n----Fitting classifier with {n_epochs} epochs")
+    print(f"--Fitting classifier with {n_epochs} epochs")
 
     criterion = nn.CrossEntropyLoss()
 

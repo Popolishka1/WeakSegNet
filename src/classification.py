@@ -3,7 +3,7 @@ import torchvision.models as models
 
 
 # TODO: this will be useful for CAM
-class PetClassifier(nn.Module):
+class ResNet(nn.Module):
     def __init__(self, weights=models.ResNet50_Weights.DEFAULT, n_classes: int=37):
         super().__init__()
         self.backbone = models.resnet50(weights=weights)

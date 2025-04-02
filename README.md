@@ -29,29 +29,34 @@ In addition, we will explorethe following research questions to enhance the proj
 ├── notebooks/              # Jupyter notebooks for running experiments and quick prototyping
 ├── results/                # Stores outputs and visualizations from experiments
 ├── src/                    # Core codebase for WeakSegNet
-│   ├── config/             # Config folder to run the experiments
+│   ├── configs/            # Configs folder to run the experiments
 │   ├── models/             # Trained models
+│   ├── bbox_utils.py       # Generate weak mask from bounding boxes
 │   ├── cam_utils.py        # Class Activation Maps functions
-│   ├── dataset.py          # Data loading and preprocessing for the Oxford-IIIT Pet dataset
-│   ├── fit.py              # Training loop for optimizing model parameters
-│   ├── metrics.py          # Functions for evaluating segmentation performance (Dice score, pixel accuracy, ...)
-│   ├── models.py           # Various network architectures (UNet, DeepLabV3, FCN, PetClassifier, ...)
-│   ├── utilities.py        # Helper functions for device management and resource cleanup
-│   ├── visualization.py    # Visualizing predictions and comparing them to ground truth
+│   ├── classification.py   # Classification network architectures
+│   ├── dataset.py          # Data loading and preprocessing (transformations/augmentations) for the Oxford-IIIT Pet dataset
+│   ├── fit.py              # Training loop for optimizing model parameters (classifier, segmentation model, ...)
+│   ├── metrics.py          # Functions for evaluating segmentation performance (Dice score, pixel accuracy, ...) and classifier accuracy
+│   ├── models.py           # Various network architectures (UNet, DeepLabV3, FCN, RedNet, ...)
+│   ├── utils.py            # Helper functions for device management and resource cleanup
+│   ├── visualization.py    # Visualization tools
 ├── .gitignore
-├── baseline.py             # Baselines (fully supervised usecase)
-├── main.py                 # Weak supervision segmentation experiments
+├── baseline.py             # Baselines (fully supervised use case)
+├── main_bbox.py            # Weak supervision segmentation (bbox) experiments
+├── main_cam.py             # Weak supervision segmentation (CAM) experiments
 ├── README.md               # This file
 ```
 
 ## Getting started
+
 ### 1️. Environment setup
 Create a conda env and install dependencies:
 ```sh
 conda create --name weakseg python=3.9 -y && \
 conda activate weakseg && \
 conda install -y numpy matplotlib && \
-conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia && \
+conda install -y -c conda-forge opencv
 ```
 
 ### 2. Baselines (fully supervised usecase)
@@ -60,12 +65,17 @@ Run the baseline script with the desired config (stored in a .json file in ``src
 python python baseline.py --config .\src\config\baseline.json
 ```
 
-### 3. Weak supervision segmentation
-Run the main script with the desired config (stored in a .json file in ``src\config``` **Modify the config to change the parameters**)
+### 3. Weak supervision segmentation : Class Activation Map
+Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
-python python main.py --config .\src\config\main.json
+python python main_cam.py --config .\src\configs\main_cam.json
 ```
 
+### 4. Weak supervision segmentation : Bounding Box
+Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
+```sh
+python python main_bbox.py --config .\src\configs\main_bbox.json
+```
 
 ## References & resources
 - **Project information**: see on Moodle the .pdf file
