@@ -1,0 +1,1 @@
+# TODO (all): generate weak mask from bounding box

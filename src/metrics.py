@@ -25,11 +25,12 @@ def pixel_accuracy(output, gt_mask, threshold=0.5):
     return accuracy.mean().item()
 
 
-# TODO: add other metrics: IoU (good for overlap) and precision & recall
+# TODO (all): add other metrics: IoU (good for overlap) and precision & recall
 
 
 def evaluate_model(model, test_loader, device="cpu"):
-    print("\n----Evaluating the model on the test set")
+    """Evaluate segmentation model performance on test set."""
+    print("\n----Evaluating the segmentation model on the test set...")
     model.eval()
     total_dice = 0.0
     total_accuracy = 0.0
@@ -54,3 +55,29 @@ def evaluate_model(model, test_loader, device="cpu"):
     print(f"Average test set pixel accuracy: {avg_accuracy:.4f}")
     
     return avg_dice, avg_accuracy
+
+
+def evaluate_classifier(classifier, test_loader, device="cpu"):
+    """Evaluate classifier performance on test set."""
+    print("\n----Evaluating classifier on the test set...")
+    classifier.eval()
+    correct = 0
+    total = 0
+    n_batches = len(test_loader)
+    
+    with torch.no_grad():
+        for images, _, info in test_loader:
+            images = images.to(device)
+            labels = info['breed_id'].clone().detach().to(device)
+            
+            outputs = classifier(images)
+            
+            # Calculate accuracy
+            _, predicted = torch.max(outputs.data, 1)
+            correct += (predicted == labels).sum().item()
+            total += labels.size(0)
+    accuracy = correct / total
+
+    print(f"Accuracy: {accuracy * 100:.2f}%")
+    
+    return accuracy

@@ -20,7 +20,7 @@ class DoubleConv(nn.Module):
         return self.conv(x)
 
 # Baseline from: https://arc-celt.github.io/pet-segmentation/
-# UNet model (encoder-decoder architecture) # TODO: variation of the UNet? See UNet++
+# UNet model (encoder-decoder architecture) # TODO (all): variation of the UNet? See UNet++
 class UNet(nn.Module):
     def __init__(self, in_channels=3, out_channels=1):
         super(UNet, self).__init__()
@@ -74,3 +74,5 @@ class FCN(nn.Module):
     def forward(self, x):
         out = self.fcn(x)['out']
         return torch.sigmoid(out) # probas
+    
+# TODO (all): consider ResNet101 instead of ResNet50 for the backbone of DeepLabV3 and FCN

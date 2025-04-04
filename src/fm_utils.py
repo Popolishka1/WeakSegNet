@@ -1,0 +1,1 @@
+# TODO (Carl): generate weak mask from foundations models
