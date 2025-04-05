@@ -1,3 +1,4 @@
+import warnings
 import torch.nn as nn
 import torchvision.models as models
 
@@ -30,3 +31,15 @@ class DenseNet121(nn.Module):
         
     def forward(self, x):
         return self.backbone(x)
+
+
+def select_classifier(model_name, n_classes):
+    if model_name == "ResNet50":
+        return ResNet50(n_classes=n_classes)
+    elif model_name == "ResNet101":
+        return ResNet101(n_classes=n_classes)
+    elif model_name == "DenseNet121":
+        return DenseNet121(n_classes=n_classes)
+    else:
+        warnings.warn("Incorrect classifier name or model not implemented. Please check the model name in classification.py.")
+        return None

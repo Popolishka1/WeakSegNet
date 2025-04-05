@@ -8,11 +8,12 @@
 
     "image_size": 256,
 
-    "classifier": "ResNet",
+    "classifier": "ResNet50",
+    "target_id": "breed_id",
     "n_classes": 37,
-    "classifier_save_path": "src/models/pet_classifier.pth",
+    "classifier_save_path": "src/models/classifier_ResNet50.pth",
 
-    "train_classifier": true,
+    "train_classifier": false,
     "n_epochs_cls": 5,
     "learning_rate_cls": 0.001,
 

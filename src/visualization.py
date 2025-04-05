@@ -1,7 +1,7 @@
 import cv2
 import torch
-import numpy as np
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 from src.dataset import inverse_normalize
 from src.cam_utils import CAMGenerator, generate_cam, cam_to_binary_mask

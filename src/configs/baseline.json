@@ -8,11 +8,11 @@
 
   "image_size": 256,
     
-  "baseline_seg_model_name": "UNet",
-  "baseline_seg_model_save_path": "src/models/baseline_UNet.pth",
+  "baseline_seg_model_name": "DeepLabV3",
+  "baseline_seg_model_save_path": "src/models/baseline_DeepLabV3.pth",
 
-  "train_segmentation": false,
-  "n_epochs": 25,
-  "learning_rate": 0.0001
+  "train_segmentation": true,
+  "n_epochs_seg": 25,
+  "learning_rate_seg": 0.0001
 
 }

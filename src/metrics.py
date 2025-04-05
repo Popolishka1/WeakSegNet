@@ -28,7 +28,7 @@ def pixel_accuracy(output, gt_mask, threshold=0.5):
 # TODO (all): add other metrics: IoU (good for overlap) and precision & recall
 
 
-def evaluate_model(model, test_loader, device="cpu"):
+def evaluate_model(model, test_loader, device="cuda"):
     """Evaluate segmentation model performance on test set."""
     print("\n----Evaluating the segmentation model on the test set...")
     model.eval()
@@ -57,19 +57,19 @@ def evaluate_model(model, test_loader, device="cpu"):
     return avg_dice, avg_accuracy
 
 
-def evaluate_classifier(classifier, test_loader, device="cpu"):
+def evaluate_classifier(classifier, test_loader, config, device="cuda"):
     """Evaluate classifier performance on test set."""
     print("\n----Evaluating classifier on the test set...")
     classifier.eval()
     correct = 0
     total = 0
-    n_batches = len(test_loader)
-    
+
+    target_id = config["target_id"]
     with torch.no_grad():
         for images, _, info in test_loader:
             images = images.to(device)
-            labels = info['breed_id'].clone().detach().to(device)
-            
+            labels = info[target_id].clone().detach().to(device)
+            # labels = info[target_id].to(device).long()
             outputs = classifier(images)
             
             # Calculate accuracy
