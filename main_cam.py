@@ -56,11 +56,13 @@ def main():
     # 3. Generate pseudo masks
     # TODO (Paul): wrap up the mask gen + viz
     cam_threshold = config["cam_threshold"]
-    print(f"\n----Generating pseudo masks from CAM with cam_threshold={cam_threshold}...")
+    cam_model = config["cam_model"]
+    print(f"\n----Generating pseudo masks from {cam_model} with cam_threshold={cam_threshold}...")
     pseudo_masks = generate_pseudo_masks(classifier=classifier,
                                          dataloader=train_loader,
                                          cam_threshold=cam_threshold,
-                                         device=DEVICE
+                                         device=DEVICE, 
+                                         model=cam_model
                                         )
 
     train_dataset_pseudo = PseudoMaskDataset(original_dataset=train_loader.dataset,
