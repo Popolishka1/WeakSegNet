@@ -100,9 +100,17 @@ def generate_grad_cam_common(cam_generator, input_image, target_class=None, vari
     def backward_hook(module, grad_input, grad_output):
         gradients["value"] = grad_output[0]
 
+    if isinstance(cam_generator.backbone, models.DenseNet):
+        dense_block = cam_generator.backbone.features.denseblock4
+        target_layer = list(dense_block.children())[-1]
+    elif isinstance(cam_generator.backbone, models.ResNet):
+        target_layer = cam_generator.backbone.layer4[-1]
+    else:
+        raise NotImplementedError("Architecture non supportée pour Grad-CAM.")
+
     # Register hooks on the stored target layer
-    handle_fwd = cam_generator.target_layer.register_forward_hook(forward_hook)
-    handle_bwd = cam_generator.target_layer.register_full_backward_hook(backward_hook)
+    handle_fwd = target_layer.register_forward_hook(forward_hook)
+    handle_bwd = target_layer.register_full_backward_hook(backward_hook)
 
     # Prepare input
     input_tensor = input_image.unsqueeze(0).requires_grad_()
