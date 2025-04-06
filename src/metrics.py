@@ -68,8 +68,8 @@ def evaluate_classifier(classifier, test_loader, config, device="cuda"):
     with torch.no_grad():
         for images, _, info in test_loader:
             images = images.to(device)
-            labels = info[target_id].clone().detach().to(device)
-            # labels = info[target_id].to(device).long()
+            # Be careful: 0-indexed for PyTorch, but 1-indexed in the dataset
+            labels = info[target_id].to(device).long() - 1 # TODO: make it more flexible maybe
             outputs = classifier(images)
             
             # Calculate accuracy

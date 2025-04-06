@@ -9,7 +9,7 @@
     "image_size": 256,
 
     "classifier": "ResNet50",
-    "target_id": "breed_id",
+    "target_id": "class_id",
     "n_classes": 37,
     "classifier_save_path": "src/models/classifier_ResNet50.pth",
 

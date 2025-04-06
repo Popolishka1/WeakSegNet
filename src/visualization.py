@@ -103,7 +103,9 @@ def visualize_cams(dataloader, n_samples, classifier, cam_type='CAM', cam_thresh
             batch_size = images.size(0)
             for i in range(batch_size):
                 # Save a tuple of (image tensor, image name)
-                all_samples.append((images[i], info["name"][i]))
+                # Be careful: class preds are 0-indexed for PyTorch
+                # But gt class are 1-indexed in the dataset 
+                all_samples.append((images[i], info["name"][i], info["class_id"][i]))
     
     # Shuffle and randomly select n_samples
     random.shuffle(all_samples)
@@ -116,14 +118,14 @@ def visualize_cams(dataloader, n_samples, classifier, cam_type='CAM', cam_thresh
     cam_generator, generate_cam_func, cam_type = get_cam_generator(classifier=classifier, cam_type=cam_type)
     
     with torch.no_grad():
-        for idx, (img_tensor, img_name) in enumerate(selected_samples):
+        for idx, (img_tensor, img_name, img_class) in enumerate(selected_samples):
 
             if cam_type == 'CAM':
                 with torch.no_grad():
-                    cam, pred_class = generate_cam_func(cam_generator=cam_generator, input_image=img_tensor)
+                    cam, pred_class = generate_cam_func(cam_generator, img_tensor)
             else:
                 with torch.enable_grad():
-                    cam, pred_class = generate_cam_func(cam_generator=cam_generator, input_image=img_tensor)
+                    cam, pred_class = generate_cam_func(cam_generator, img_tensor)
 
             # Inverse normalize image for display 
             img = inverse_normalize(img_tensor).cpu().permute(1, 2, 0).numpy()
@@ -141,10 +143,11 @@ def visualize_cams(dataloader, n_samples, classifier, cam_type='CAM', cam_thresh
 
             # Plot: original image + CAM overlay + pseudo mask
             ax[idx, 0].imshow(img)
-            ax[idx, 0].set_title("Original image: " + img_name)
+            ax[idx, 0].set_title("Original image: " + img_name + f"(GT class {img_class})") # GT class id (1-indexed)
             
             ax[idx, 1].imshow(overlayed_img)
-            ax[idx, 1].set_title(f"CAM overlay (Class pred {pred_class})")
+            # Be careful: 0-indexed for PyTorch, but gt class are 1-indexed in the dataset
+            ax[idx, 1].set_title(f"CAM overlay (Class pred {pred_class + 1})") # +1 to match GT class id (0-indexed)
             
             ax[idx, 2].imshow(pseudo_mask.squeeze().cpu().numpy(), cmap="gray")
             ax[idx, 2].set_title(f"Pseudo mask from CAM @ {cam_threshold}")
