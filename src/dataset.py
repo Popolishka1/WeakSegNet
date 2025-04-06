@@ -30,11 +30,14 @@ class OxfordPet(Dataset):
         for line in lines:
             name, class_id, species, breed_id = line.strip().split()
 
+            # Be careful, class_id and species-id are 1-indexed in the dataset
+            # We convert them to 0-indexed for PyTorch
+            # breed_id won't be used for classification, but we keep it for consistency
             self.samples.append({
                 "name": name,
-                "class_id": int(class_id),
-                "species_id": int(species),
-                "breed_id": int(breed_id)
+                "class_id": int(class_id) - 1,
+                "species_id": int(species) - 1,
+                "breed_id": int(breed_id) - 1
             })
 
 

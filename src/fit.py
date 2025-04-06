@@ -83,8 +83,7 @@ def fit_classification(classifier, target_id, n_epochs, lr, train_loader, val_lo
 
         for images, _, info in train_loader:
             images = images.to(device)
-            # Be careful: 0-indexed for PyTorch, but 1-indexed in the dataset
-            labels = info[target_id].to(device).long() - 1 # TODO: make it more flexible maybe
+            labels = info[target_id].to(device).long()
 
             outputs = classifier(images)
             loss = criterion(outputs, labels)
@@ -104,8 +103,7 @@ def fit_classification(classifier, target_id, n_epochs, lr, train_loader, val_lo
         with torch.no_grad():
             for images, _, info in val_loader:
                 images = images.to(device)
-                # Be careful: 0-indexed for PyTorch, but 1-indexed in the dataset
-                labels = info[target_id].to(device).long() - 1 # TODO: make it more flexible maybe
+                labels = info[target_id].to(device).long()
 
                 outputs = classifier(images)
                 loss = criterion(outputs, labels)

@@ -3,23 +3,27 @@ import torch
 from src.metrics import evaluate_model
 from src.dataset import load_data_wrapper
 from src.fit import train_segmentation_model
+from visualisation import visualise_predictions
 from src.models import select_segmentation_model
-from src.visualization import visualize_predictions
 from src.utils import load_device, clear_cuda_cache, parse_args
 
 
 def main():
-    # Load configuration from .json config file (Baseline experiment)
+    # Load configuration from .json config file (baseline experiment)
     config = parse_args(expriment_name="Baseline")
     
     # Set device and clear CUDA cache
     DEVICE = load_device()
     clear_cuda_cache()
     
-    # 1. Load dataset (train, val, and test loaders)
+    ##################################################
+    # 1. Load dataset (train, val, and test loaders) #
+    ##################################################
     train_loader, val_loader, test_loader = load_data_wrapper(config=config)
     
-    # 2. Train baseline segmentation model (fully supervised)
+    ###########################################################
+    # 2. Train baseline segmentation model (fully supervised) #
+    ###########################################################
     # 2.1. Select and init baseline segmentation model
     baseline_segmentation_model = select_segmentation_model(model_name=config["baseline_seg_model_name"])
     if baseline_segmentation_model is None:
@@ -44,15 +48,22 @@ def main():
         baseline_segmentation_model.to(DEVICE)
         print("[Baseline segmentation model loaded]")
     
-    # 3. Evaluate and visualize results
+
+    #####################################
+    # 3. Evaluate and visualize results #
+    #####################################
+    # 3.1 Evaluate segmentation model
     evaluate_model(model=baseline_segmentation_model, test_loader=test_loader, device=DEVICE)
-    visualize_predictions(model=baseline_segmentation_model,
+    clear_cuda_cache()
+
+    # 3.2 Visualise predictions
+    visualise_predictions(config=config,
                           dataloader=test_loader,
+                          model=baseline_segmentation_model,
                           n_samples=5,
                           threshold=0.5,
-                          save_path="results/baseline/segmentation_examples.png",
                           device=DEVICE
-                          ) # TODO (Paul): add saving path in cfg
+                          )
     clear_cuda_cache()
 
 
