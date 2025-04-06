@@ -170,7 +170,7 @@ def get_cam_generator(classifier, cam_type="CAM"):
         generate_cam_func = generate_cam
         
     elif cam_type in ["Grad-CAM", "Grad-CAM++"]:
-        generate_cam_func = lambda cam_gen, img, target_class=None: generate_grad_cam_common(cam_gen, img, target_class, variant=cam_type)
+        generate_cam_func = lambda cam_generator, input_image, target_class=None: generate_grad_cam_common(cam_generator, input_image, target_class, variant=cam_type)
     else:
         raise ValueError("Invalid model type. Choose CAM', 'Grad-CAM', or 'Grad-CAM++'.")
 
