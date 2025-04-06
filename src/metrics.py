@@ -8,11 +8,35 @@ def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
     predicted_mask = (output > threshold).float()
     gt_mask = gt_mask.float()
 
-    intersection = (predicted_mask * gt_mask).sum(dim=(1, 2, 3))
-    union = predicted_mask.sum(dim=(1, 2, 3)) + gt_mask.sum(dim=(1, 2, 3))
-
+    intersection = (predicted_mask * gt_mask).sum()
+    union = predicted_mask.sum() + gt_mask.sum()
     dice = (2 * intersection + eps) / (union + eps)
-    return dice.mean().item()
+    return dice
+
+
+def iou_score(output, gt_mask, threshold=0.5, eps=1e-7):
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    intersection = (predicted_mask * gt_mask).sum()
+    union = predicted_mask.sum() + gt_mask.sum() - intersection
+
+    iou = (intersection + eps) / (union + eps)
+    return iou
+
+
+def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    tp = (predicted_mask * gt_mask).sum()
+    predicted_positive = predicted_mask.sum()
+    actual_positive = gt_mask.sum()
+
+    precision = (tp + eps) / (predicted_positive + eps)
+    recall = (tp + eps) / (actual_positive + eps)
+
+    return precision.item(), recall.item()
 
 
 def pixel_accuracy(output, gt_mask, threshold=0.5):
@@ -21,40 +45,52 @@ def pixel_accuracy(output, gt_mask, threshold=0.5):
 
     correct = (predicted_mask == gt_mask).float()
 
-    accuracy = correct.sum(dim=(1, 2, 3)) / correct[0].numel()
-    return accuracy.mean().item()
+    total = torch.numel(gt_mask)
+    accuracy = correct.sum() / total
+    return accuracy
 
 
-# TODO (all): add other metrics: IoU (good for overlap) and precision & recall
-
-
-def evaluate_model(model, test_loader, device="cuda"):
-    """Evaluate segmentation model performance on test set."""
+def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
+    """
+    Evaluate segmentation model performance on test set.
+    Gloval evaluation of the model performance (metrics are not averaged per batch vut global).
+    """
     print("\n----Evaluating the segmentation model on the test set...")
     model.eval()
-    total_dice = 0.0
-    total_accuracy = 0.0
-    n_batches = len(test_loader)
+    all_outputs = []
+    all_gt_masks = []
 
     with torch.no_grad():
         for images, gt_masks, _ in test_loader:
             images = images.to(device)
             gt_masks = gt_masks.to(device)
-
             outputs = model(images)
 
-            dice = dice_score(outputs, gt_masks)
-            accuracy = pixel_accuracy(outputs, gt_masks)
-
-            total_dice += dice
-            total_accuracy += accuracy
-    avg_dice = total_dice / n_batches
-    avg_accuracy = total_accuracy / n_batches
-
-    print(f"Average test set dice score: {avg_dice:.4f}") # TODO: should we consider a global evaluation? so total performance instead of per-image
-    print(f"Average test set pixel accuracy: {avg_accuracy:.4f}")
+            all_outputs.append(outputs.cpu())
+            all_gt_masks.append(gt_masks.cpu())
     
-    return avg_dice, avg_accuracy
+    all_outputs = torch.cat(all_outputs, dim=0)
+    all_gt_masks = torch.cat(all_gt_masks, dim=0)
+
+    dice = dice_score(all_outputs, all_gt_masks, threshold)
+    iou = iou_score(all_outputs, all_gt_masks, threshold)
+    accuracy = pixel_accuracy(all_outputs, all_gt_masks, threshold)
+    precision, recall = precision_recall(all_outputs, all_gt_masks, threshold)
+
+    print("Performance metrics on the test set:")
+    print(f"Dice score: {dice:.4f}")
+    print(f"IoU: {iou:.4f}")
+    print(f"Pixel accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    
+    metrics ={"dice": dice,
+              "iou": iou,
+              "accuracy": accuracy,
+              "precision": precision,
+              "recall": recall
+              }
+    return metrics
 
 
 def evaluate_classifier(classifier, test_loader, config, device="cuda"):

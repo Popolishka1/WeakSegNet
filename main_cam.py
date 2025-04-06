@@ -121,7 +121,7 @@ def main():
     # 5. Evaluate and visualize results #
     #####################################
     # 5.1 Evaluate segmentation model
-    evaluate_model(model=segmentation_model, test_loader=test_loader, device=DEVICE)
+    evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
     clear_cuda_cache()
 
     # 5.2 Visualise predictions
