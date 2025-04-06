@@ -3,8 +3,8 @@ import torch
 from src.metrics import evaluate_model
 from src.dataset import load_data_wrapper
 from src.fit import train_segmentation_model
-from visualisation import visualise_predictions
 from src.models import select_segmentation_model
+from src.visualisation import visualise_predictions
 from src.utils import load_device, clear_cuda_cache, parse_args
 
 

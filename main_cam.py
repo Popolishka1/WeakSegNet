@@ -8,7 +8,7 @@ from src.metrics import evaluate_model, evaluate_classifier
 from src.dataset import load_data_wrapper, PseudoMaskDataset
 from src.fit import train_classifier, train_segmentation_model
 from src.utils import load_device, clear_cuda_cache, parse_args
-from visualisation import visualise_predictions, visualise_cams
+from src.visualisation import visualise_predictions, visualise_cams
 
 
 def main():
