@@ -17,9 +17,8 @@
     "n_epochs_cls": 5,
     "learning_rate_cls": 0.001,
 
-    "cam_threshold": 0.4,
     "cam_model" : "CAM",
-
+    "cam_threshold": 0.5,
 
     "segmentation_model": "DeepLabV3",
     "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3.pth",
