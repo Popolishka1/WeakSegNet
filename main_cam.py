@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 
-from src.cam_utils import generate_pseudo_masks
+from src.cam_utils import generate_pseudo_masks, get_cam_generator
 from src.classification import select_classifier
 from src.models import select_segmentation_model
 from src.metrics import evaluate_model, evaluate_classifier
@@ -56,27 +56,31 @@ def main():
     # 3. Generate pseudo masks
     # TODO (Paul): wrap up the mask gen + viz
     cam_threshold = config["cam_threshold"]
-    cam_model = config["cam_model"]
-    print(f"\n----Generating pseudo masks from {cam_model} with cam_threshold={cam_threshold}...")
-    pseudo_masks = generate_pseudo_masks(classifier=classifier,
-                                         dataloader=train_loader,
+    cam_type = config["cam_model"]
+    print(f"\n----Generating pseudo masks from {cam_type} with cam_threshold={cam_threshold}...")
+
+    pseudo_masks = generate_pseudo_masks(dataloader=train_loader,
+                                         classifier=classifier,
+                                         cam_type=cam_type,
                                          cam_threshold=cam_threshold,
-                                         device=DEVICE, 
-                                         model=cam_model
+                                         device=DEVICE
                                         )
 
     train_dataset_pseudo = PseudoMaskDataset(original_dataset=train_loader.dataset,
                                              pseudo_masks=pseudo_masks
                                              )
+    
     train_loader_pseudo = DataLoader(train_dataset_pseudo, batch_size=config["train_batch_size"], shuffle=True, num_workers=4)
     assert len(pseudo_masks) == len(train_loader.dataset), "Mismatched pseudo masks!"
     print(f"[Generated {len(pseudo_masks)} pseudo masks]")
 
-    visualize_cams(classifier=classifier,
-                   test_loader=test_loader,
-                   device=DEVICE,
+    visualize_cams(dataloader=test_loader,
+                   n_samples=5,
+                   classifier=classifier,
+                   cam_type=cam_type,
                    cam_threshold=cam_threshold,
-                   save_path="cam_examples.png"
+                   save_path="results/cam/cam_examples.png",
+                   device=DEVICE
                    ) # TODO (Paul): add saving path in cfg
 
     # 4. Train segmentation model (weakly supervised)
@@ -108,7 +112,13 @@ def main():
 
     # 5. Evaluate and visualize results
     evaluate_model(model=segmentation_model, test_loader=test_loader, device=DEVICE)
-    visualize_predictions(model=segmentation_model, test_loader=test_loader, device=DEVICE) # TODO (Paul): add saving path in cfg
+    visualize_predictions(model=segmentation_model,
+                          dataloader=test_loader,
+                          n_samples=5,
+                          threshold=0.5,
+                          save_path="results/cam/segmentation_examples.png",
+                          device=DEVICE
+                          ) # TODO (Paul): add saving path in cfg
     clear_cuda_cache()
 
 

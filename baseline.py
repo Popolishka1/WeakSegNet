@@ -46,7 +46,13 @@ def main():
     
     # 3. Evaluate and visualize results
     evaluate_model(model=baseline_segmentation_model, test_loader=test_loader, device=DEVICE)
-    visualize_predictions(model=baseline_segmentation_model, test_loader=test_loader, device=DEVICE) # TODO (Paul): add saving path in cfg
+    visualize_predictions(model=baseline_segmentation_model,
+                          dataloader=test_loader,
+                          n_samples=5,
+                          threshold=0.5,
+                          save_path="results/baseline/segmentation_examples.png",
+                          device=DEVICE
+                          ) # TODO (Paul): add saving path in cfg
     clear_cuda_cache()
 
 

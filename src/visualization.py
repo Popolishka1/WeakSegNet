@@ -4,7 +4,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from src.dataset import inverse_normalize
-from src.cam_utils import CAMGenerator, generate_cam, cam_to_binary_mask
+from src.cam_utils import  cam_to_binary_mask, get_cam_generator
 
 
 def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
@@ -32,13 +32,13 @@ def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
     return overlay
 
 
-def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, save_path="predictions_visualization.png", device="cuda"):
+def visualize_predictions(model, dataloader, n_samples=5, threshold=0.5, save_path="segmentation_examples.png", device="cuda"):
     print(f"\n----Visualizing {n_samples} predicted masks from the trained model")
     model.eval()
 
     all_samples = [] # samples from the test loader
     with torch.no_grad():
-        for images, gt_masks, info in test_loader:
+        for images, gt_masks, info in dataloader:
             images = images.to(device)  
             gt_masks = gt_masks.to(device)
             batch_size = images.size(0)
@@ -90,7 +90,7 @@ def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, save_p
     print(f"[Saved predictions to {save_path}]")
 
 
-def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save_path="cam_visualization.png", device="cuda"):
+def visualize_cams(dataloader, n_samples, classifier, cam_type='CAM', cam_threshold=0.5, save_path="cam_examples.png", device="cuda"):
     """Visualize CAM overlays for the first n_samples images."""
 
     print(f"\n----Visualizing CAMs for {n_samples} sample images")
@@ -98,7 +98,7 @@ def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save
 
     all_samples = [] # samples from the test loader
     with torch.no_grad():
-        for images, _, info in test_loader:
+        for images, _, info in dataloader:
             images = images.to(device)
             batch_size = images.size(0)
             for i in range(batch_size):
@@ -113,13 +113,17 @@ def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save
     if n_samples == 1:
         ax = np.expand_dims(ax, axis=0)
 
-    # Init CAM generator
-    cam_generator = CAMGenerator(classifier)
+    cam_generator, generate_cam_func, cam_type = get_cam_generator(classifier=classifier, cam_type=cam_type)
     
     with torch.no_grad():
         for idx, (img_tensor, img_name) in enumerate(selected_samples):
-            # Generate CAM for the given image tensor
-            cam, pred_class = generate_cam(cam_generator=cam_generator, input_image=img_tensor)
+
+            if cam_type == 'CAM':
+                with torch.no_grad():
+                    cam, pred_class = generate_cam_func(cam_generator=cam_generator, input_image=img_tensor)
+            else:
+                with torch.enable_grad():
+                    cam, pred_class = generate_cam_func(cam_generator=cam_generator, input_image=img_tensor)
 
             # Inverse normalize image for display 
             img = inverse_normalize(img_tensor).cpu().permute(1, 2, 0).numpy()
