@@ -8,7 +8,7 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
     criterion = nn.BCELoss()
     
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5) # lr dynamic adjustment 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3) # lr dynamic adjustment 
 
     for epoch in range(1, n_epochs + 1):
 
@@ -72,7 +72,7 @@ def fit_classification(classifier, target_id, n_epochs, lr, train_loader, val_lo
     criterion = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(classifier.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5) # lr dynamic adjustment 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3) # lr dynamic adjustment 
 
     for epoch in range(1, n_epochs + 1):
 

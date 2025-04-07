@@ -69,7 +69,7 @@ def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5,
 
         # Plot: original image, gt mask and predicted mask
         ax[image_to_show, 0].imshow(img)
-        ax[image_to_show, 0].set_title("Original image: " + img_name)
+        ax[image_to_show, 0].set_title(f"Original image:\n{img_name}")
         
         ax[image_to_show, 1].imshow(gt_mask_np, cmap="gray")
         ax[image_to_show, 1].set_title("GT mask")
@@ -78,7 +78,7 @@ def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5,
         ax[image_to_show, 2].set_title("Predicted mask")
         
         ax[image_to_show, 3].imshow(overlayed_img)
-        ax[image_to_show, 3].set_title("Overlay: GT (green) + Pred (red)")
+        ax[image_to_show, 3].set_title("Overlay: \nGT (green) + Pred (red)")
         
         for j in range(4):
             ax[image_to_show, j].axis("off")
@@ -160,4 +160,4 @@ def visualise_cams(config, dataloader, classifier, cam_type='CAM', cam_threshold
     fig.tight_layout()
     plt.savefig(save_path)
     plt.close()
-    print(f"[Saved CAM visualizations to {save_path}]")
+    print(f"[Saved CAM visualisations to {save_path}]")

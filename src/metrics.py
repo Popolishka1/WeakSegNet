@@ -1,4 +1,7 @@
+import os
+import csv
 import torch
+from datetime import datetime
 
 
 def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
@@ -11,7 +14,7 @@ def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
     intersection = (predicted_mask * gt_mask).sum()
     union = predicted_mask.sum() + gt_mask.sum()
     dice = (2 * intersection + eps) / (union + eps)
-    return dice
+    return dice.item()
 
 
 def iou_score(output, gt_mask, threshold=0.5, eps=1e-7):
@@ -22,7 +25,18 @@ def iou_score(output, gt_mask, threshold=0.5, eps=1e-7):
     union = predicted_mask.sum() + gt_mask.sum() - intersection
 
     iou = (intersection + eps) / (union + eps)
-    return iou
+    return iou.item()
+
+
+def pixel_accuracy(output, gt_mask, threshold=0.5):
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    correct = (predicted_mask == gt_mask).float()
+
+    total = torch.numel(gt_mask)
+    accuracy = correct.sum() / total
+    return accuracy.item()
 
 
 def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
@@ -37,17 +51,6 @@ def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
     recall = (tp + eps) / (actual_positive + eps)
 
     return precision.item(), recall.item()
-
-
-def pixel_accuracy(output, gt_mask, threshold=0.5):
-    predicted_mask = (output > threshold).float()
-    gt_mask = gt_mask.float()
-
-    correct = (predicted_mask == gt_mask).float()
-
-    total = torch.numel(gt_mask)
-    accuracy = correct.sum() / total
-    return accuracy
 
 
 def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
@@ -91,6 +94,18 @@ def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
               "recall": recall
               }
     return metrics
+
+
+def save_metrics_to_csv(metrics, save_path="metrics.csv"):
+    """Simple function to save metrics to a CSV file."""
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    write_header = not os.path.exists(save_path)
+
+    with open(save_path, mode="a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=metrics.keys())
+        if write_header:
+            writer.writeheader()
+        writer.writerow(metrics)
 
 
 def evaluate_classifier(classifier, test_loader, config, device="cuda"):

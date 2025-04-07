@@ -1,10 +1,10 @@
 import torch
 
-from src.metrics import evaluate_model
 from src.dataset import load_data_wrapper
 from src.fit import train_segmentation_model
 from src.models import select_segmentation_model
 from src.visualisation import visualise_predictions
+from src.metrics import evaluate_model, save_metrics_to_csv
 from src.utils import load_device, clear_cuda_cache, parse_args
 
 
@@ -53,8 +53,9 @@ def main():
     # 3. Evaluate and visualize results #
     #####################################
     # 3.1 Evaluate segmentation model
-    evaluate_model(model=baseline_segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
+    metrics = evaluate_model(model=baseline_segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
     clear_cuda_cache()
+    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
 
     # 3.2 Visualise predictions
     visualise_predictions(config=config,

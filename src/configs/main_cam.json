@@ -1,32 +1,34 @@
 {
-    "data_folder": "data",
+  "data_folder": "data",
 
-    "train_batch_size": 64,
-    "val_batch_size": 32,
-    "test_batch_size": 64,
-    "val_split": 0.2,
+  "train_batch_size": 64,
+  "val_batch_size": 32,
+  "test_batch_size": 64,
+  "val_split": 0.2,
 
-    "image_size": 256,
+  "image_size": 256,
 
-    "classifier": "ResNet50",
-    "target_id": "class_id",
-    "n_classes": 37,
-    "classifier_save_path": "src/models/classifier_ResNet50.pth",
+  "classifier": "ResNet50",
+  "target_id": "class_id",
+  "n_classes": 37,
+  "classifier_save_path": "src/models/classifier_ResNet50.pth",
 
-    "train_classifier": false,
-    "n_epochs_cls": 5,
-    "learning_rate_cls": 0.001,
+  "train_classifier": false,
+  "n_epochs_cls": 5,
+  "learning_rate_cls": 0.001,
 
-    "cam_model" : "CAM",
-    "cam_threshold": 0.5,
-    "cam_visualisation_save_path": "results/cam/cam_examples.png",
+  "cam_model" : "CAM",
+  "cam_threshold": 0.5,
+  "cam_visualisation_save_path": "results/cam/cam_examples.png",
 
-    "segmentation_model": "DeepLabV3",
-    "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3.pth",
+  "segmentation_model": "DeepLabV3",
+  "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3.pth",
 
-    "train_segmentation": true,
-    "n_epochs_seg": 5,
-    "learning_rate_seg": 0.0001,
-    "segmentation_visualisation_save_path": "results/cam/segmentation_examples.png"
+  "train_segmentation": true,
+  "n_epochs_seg": 5,
+  "learning_rate_seg": 0.0001,
 
-  }
+  "segmentation_metrics_save_path": "results/cam/segmentation_metrics.csv",
+  "segmentation_visualisation_save_path": "results/cam/segmentation_examples.png"
+
+}

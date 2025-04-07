@@ -4,11 +4,11 @@ from torch.utils.data import DataLoader
 from src.cam_utils import generate_pseudo_masks
 from src.classification import select_classifier
 from src.models import select_segmentation_model
-from src.metrics import evaluate_model, evaluate_classifier
 from src.dataset import load_data_wrapper, PseudoMaskDataset
 from src.fit import train_classifier, train_segmentation_model
 from src.utils import load_device, clear_cuda_cache, parse_args
 from src.visualisation import visualise_predictions, visualise_cams
+from src.metrics import evaluate_model, evaluate_classifier, save_metrics_to_csv
 
 
 def main():
@@ -121,8 +121,9 @@ def main():
     # 5. Evaluate and visualize results #
     #####################################
     # 5.1 Evaluate segmentation model
-    evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
+    metrics = evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
     clear_cuda_cache()
+    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
 
     # 5.2 Visualise predictions
     visualise_predictions(config=config,
