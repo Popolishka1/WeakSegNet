@@ -8,10 +8,9 @@ import requests
 import numpy as np
 import matplotlib.pyplot as plt
 from src.utils import load_device, clear_cuda_cache
-from src.fm_utils import parse_args
+from src.fm_utils import parse_args, evaluate_and_visualise_sam
 from src.dataset import load_data_wrapper
 from src.metrics import evaluate_model, save_metrics_to_csv
-from src.fm_utils import visualise_predictions_sam
 
 from segment_anything import SamPredictor, sam_model_registry
 
@@ -29,28 +28,28 @@ def main():
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
+    # TO DO: The results are not really good right now, we should try to load the data without any applied transformation.
+    # So, modify the load_data_wrapper
     train_loader, val_loader, test_loader = load_data_wrapper(config=config)
     print("Created data loaders.\n")
     
     ##################################################
     # 2. Download and initialise SAM                #
     ##################################################
-    
-    # Download SAM ViT-B checkpoint if needed
     url = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
     response = requests.get(url)
     with open("sam_vit_b_01ec64.pth", "wb") as f:
         f.write(response.content)
     print("Checkpoint downloaded successfully.")
     
-    # Initialise SAM and create the SAMWrapper
     sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
     sam.to(DEVICE)
     predictor = SamPredictor(sam)
     
     class SAMWrapper:
-        def __init__(self, predictor):
+        def __init__(self, predictor, device):
             self.predictor = predictor
+            self.device = device
 
         def __call__(self, images):
             """
@@ -74,32 +73,27 @@ def main():
                     box=None,
                     multimask_output=False
                 )
-                outputs.append(torch.from_numpy(masks[0]).float())
+                # Move the mask tensor to the desired device.
+                outputs.append(torch.from_numpy(masks[0]).float().to(self.device))
             return torch.stack(outputs, dim=0)
 
         def eval(self):
             return self
     
-    segmentation_model = SAMWrapper(predictor)
+    segmentation_model = SAMWrapper(predictor, DEVICE)
     
     #####################################
     # 3. Evaluate and visualize results #
     #####################################
+    # Instead of evaluating metrics and visualizing in two separate stages,
+    # process each image as it is predicted.
+    evaluate_and_visualise_sam(model=segmentation_model, 
+                               dataloader=test_loader, 
+                               device=DEVICE,
+                               threshold=0.8,
+                               n_samples=1)
     
-    # Evaluate segmentation model (this calls your existing evaluate_model,
-    # which expects a model that can process a batch of images)
-    metrics = evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
     clear_cuda_cache()
-    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
-    
-    # Visualise predictions (using our SAM-specific visualisation function)
-    visualise_predictions_sam(config=config,
-                              dataloader=test_loader,
-                              model=segmentation_model,
-                              n_samples=5,
-                              threshold=0.5,
-                              device=DEVICE)
-    clear_cuda_cache()
-    
+
 if __name__ == "__main__":
     main()
