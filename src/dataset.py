@@ -1,6 +1,5 @@
 import os
 import torch
-import random
 import numpy as np
 from PIL import Image
 from torchvision import transforms
@@ -31,11 +30,14 @@ class OxfordPet(Dataset):
         for line in lines:
             name, class_id, species, breed_id = line.strip().split()
 
+            # Be careful, class_id and species-id are 1-indexed in the dataset
+            # We convert them to 0-indexed for PyTorch
+            # breed_id won't be used for classification, but we keep it for consistency
             self.samples.append({
                 "name": name,
-                "class_id": int(class_id),
-                "species_id": int(species),
-                "breed_id": int(breed_id)
+                "class_id": int(class_id) - 1,
+                "species_id": int(species) - 1,
+                "breed_id": int(breed_id) - 1
             })
 
 
@@ -79,7 +81,7 @@ class OxfordPet(Dataset):
         # Load, preprocess and transform ground truth mask
         trimap_path = os.path.join(self.data_dir, "annotations", "trimaps", f"{name}.png")
         trimap = np.array(Image.open(trimap_path))
-        gt_mask = Image.fromarray(self.preprocess_mask(trimap))
+        gt_mask = Image.fromarray(self.preprocess_mask(trimap=trimap))
         if self.mask_transform:
             gt_mask = self.mask_transform(gt_mask)
 
@@ -89,11 +91,11 @@ class OxfordPet(Dataset):
             "class_id": sample["class_id"],
             "species_id": sample["species_id"],
             "breed_id": sample["breed_id"],
-            "bbox": [0, 0, 0, 0] # Default placeholder
+            "bbox": [0, 0, 0, 0] # default placeholder
         }
 
         xml_path = os.path.join(self.data_dir, "annotations", "xmls", f"{name}.xml")
-        bbox = self.read_xml_file(xml_path)
+        bbox = self.read_xml_file(path=xml_path)
         if bbox is not None:
             info["bbox"] = bbox
 
@@ -115,8 +117,6 @@ class PseudoMaskDataset(Dataset):
         # Replace ground truth mask with pseudo mask
         pseudo_mask = self.pseudo_masks[idx]
         return image, pseudo_mask, info
-
-
 
 
 def data_transform(image_size: int = 256, train: bool = True):
@@ -143,7 +143,7 @@ def data_transform(image_size: int = 256, train: bool = True):
     # Base mask transforms (always applied)
     mask_transforms = [
         transforms.Resize(size=(image_size, image_size), interpolation=Image.NEAREST),
-        transforms.Lambda(lambda mask: mask_to_tensor(mask))
+        transforms.Lambda(lambda mask: mask_to_tensor(mask=mask))
     ]
 
     # Training-specific augmentations
@@ -163,7 +163,7 @@ def data_transform(image_size: int = 256, train: bool = True):
         mask_transforms = [
             transforms.Resize(size=(image_size, image_size), interpolation=Image.NEAREST),
             # transforms.RandomHorizontalFlip(p=0.5), # TODO: find a way to synchronize this with the image
-            transforms.Lambda(lambda mask: mask_to_tensor(mask))
+            transforms.Lambda(lambda mask: mask_to_tensor(mask=mask))
         ]
 
     image_transform = transforms.Compose(image_transforms)
@@ -229,15 +229,34 @@ def data_loading(path: str,
     
     # Create subsets with proper transforms
     train_dataset = Subset(full_train_dataset, train_indices)
-    val_dataset = Subset(full_val_dataset, val_indices) # Uses val transforms
+    val_dataset = Subset(full_val_dataset, val_indices)
     
     # Create train, val & test loaders
+    # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
     train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=4)
 
     print("[Data loaded succesfully]")
-    print(f"\nTrain set: {len(train_dataset)}")
-    print(f"Val set: {len(val_dataset)}")
-    print(f"Test set: {len(test_dataset)}")
+    print(f"\nTraining set: {len(train_dataset)} samples")
+    print(f"Validation set: {len(val_dataset)} samples")
+    print(f"Test set: {len(test_dataset)} samples")
     return train_loader, val_loader, test_loader
+
+
+def load_data_wrapper(config):
+    """"Wrapper function to load data from the config file"""
+    BASE_DIR = os.getcwd()
+    FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
+    
+    # Data split and batch sizes from the config
+    batch_size_train = config["train_batch_size"]
+    batch_size_val = config["val_batch_size"]
+    batch_size_test = config["test_batch_size"]
+    val_split = config["val_split"]
+    data_split_size = (batch_size_train, batch_size_val, batch_size_test, val_split)
+    
+    # Image size for resize  
+    image_size = config["image_size"]
+    
+    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size)

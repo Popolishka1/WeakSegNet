@@ -1,10 +1,10 @@
 import cv2
 import torch
-import numpy as np
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 from src.dataset import inverse_normalize
-from src.cam_utils import CAMGenerator, generate_cam, cam_to_binary_mask
+from src.cam_utils import  cam_to_binary_mask, get_cam_generator
 
 
 def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
@@ -32,13 +32,12 @@ def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
     return overlay
 
 
-def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, save_path="predictions_visualization.png", device="cuda"):
+def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5, device="cuda"):
     print(f"\n----Visualizing {n_samples} predicted masks from the trained model")
     model.eval()
-
     all_samples = [] # samples from the test loader
     with torch.no_grad():
-        for images, gt_masks, info in test_loader:
+        for images, gt_masks, info in dataloader:
             images = images.to(device)  
             gt_masks = gt_masks.to(device)
             batch_size = images.size(0)
@@ -70,40 +69,43 @@ def visualize_predictions(model, test_loader, n_samples=5, threshold=0.5, save_p
 
         # Plot: original image, gt mask and predicted mask
         ax[image_to_show, 0].imshow(img)
-        ax[image_to_show, 0].set_title("Original image: " + img_name)
+        ax[image_to_show, 0].set_title(f"Original image:\n{img_name}")
         
         ax[image_to_show, 1].imshow(gt_mask_np, cmap="gray")
-        ax[image_to_show, 1].set_title("Ground truth mask")
+        ax[image_to_show, 1].set_title("GT mask")
         
         ax[image_to_show, 2].imshow(pred_mask, cmap="gray")
         ax[image_to_show, 2].set_title("Predicted mask")
         
         ax[image_to_show, 3].imshow(overlayed_img)
-        ax[image_to_show, 3].set_title("Overlay")
+        ax[image_to_show, 3].set_title("Overlay: \nGT (green) + Pred (red)")
         
         for j in range(4):
             ax[image_to_show, j].axis("off")
     
+    save_path = config["segmentation_visualisation_save_path"]
     fig.tight_layout()
     plt.savefig(save_path)
     plt.close()
     print(f"[Saved predictions to {save_path}]")
 
 
-def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save_path="cam_visualization.png", device="cuda"):
+def visualise_cams(config, dataloader, classifier, cam_type='CAM', cam_threshold=0.5, n_samples=5, device="cuda"):
     """Visualize CAM overlays for the first n_samples images."""
-
     print(f"\n----Visualizing CAMs for {n_samples} sample images")
     classifier.eval()
 
+    target_id = config["target_id"]
     all_samples = [] # samples from the test loader
     with torch.no_grad():
-        for images, _, info in test_loader:
+        for images, _, info in dataloader:
             images = images.to(device)
             batch_size = images.size(0)
             for i in range(batch_size):
                 # Save a tuple of (image tensor, image name)
-                all_samples.append((images[i], info["name"][i]))
+                # Be careful: target classes are 0-indexed for PyTorch
+                # But gt class are 1-indexed in the dataset 
+                all_samples.append((images[i], info["name"][i], info[target_id][i]))
     
     # Shuffle and randomly select n_samples
     random.shuffle(all_samples)
@@ -113,13 +115,17 @@ def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save
     if n_samples == 1:
         ax = np.expand_dims(ax, axis=0)
 
-    # Init CAM generator
-    cam_generator = CAMGenerator(classifier)
+    cam_generator, generate_cam_func, cam_type = get_cam_generator(classifier=classifier, cam_type=cam_type)
     
     with torch.no_grad():
-        for idx, (img_tensor, img_name) in enumerate(selected_samples):
-            # Generate CAM for the given image tensor
-            cam, pred_class = generate_cam(cam_generator=cam_generator, input_image=img_tensor)
+        for idx, (img_tensor, img_name, img_target) in enumerate(selected_samples):
+
+            if cam_type == 'CAM':
+                with torch.no_grad():
+                    cam, pred_class = generate_cam_func(cam_generator, img_tensor)
+            else:
+                with torch.enable_grad():
+                    cam, pred_class = generate_cam_func(cam_generator, img_tensor)
 
             # Inverse normalize image for display 
             img = inverse_normalize(img_tensor).cpu().permute(1, 2, 0).numpy()
@@ -137,10 +143,12 @@ def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save
 
             # Plot: original image + CAM overlay + pseudo mask
             ax[idx, 0].imshow(img)
-            ax[idx, 0].set_title("Original image: " + img_name)
+            # Be careful: 0-indexed for PyTorch, but target classes are 1-indexed in the dataset
+            ax[idx, 0].set_title("Original image: " + img_name + f" (GT class {img_target + 1})") # +1 to match the dataset class index
             
             ax[idx, 1].imshow(overlayed_img)
-            ax[idx, 1].set_title(f"CAM overlay (Class pred {pred_class})")
+            # Be careful: 0-indexed for PyTorch, but target classes are 1-indexed in the dataset
+            ax[idx, 1].set_title(f"CAM overlay (Class pred {pred_class + 1})") # +1 to match the dataset class index
             
             ax[idx, 2].imshow(pseudo_mask.squeeze().cpu().numpy(), cmap="gray")
             ax[idx, 2].set_title(f"Pseudo mask from CAM @ {cam_threshold}")
@@ -148,7 +156,8 @@ def visualize_cams(classifier, test_loader, n_samples=5, cam_threshold=0.5, save
             for j in range(3):
                 ax[idx, j].axis("off")
                 
+    save_path = config["cam_visualisation_save_path"]
     fig.tight_layout()
     plt.savefig(save_path)
     plt.close()
-    print(f"[Saved CAM visualizations to {save_path}]")
+    print(f"[Saved CAM visualisations to {save_path}]")

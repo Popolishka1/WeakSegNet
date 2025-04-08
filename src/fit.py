@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 
 
-def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cpu"):
+def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda"):
     print(f"--Fitting segmentation model with {n_epochs} epochs")
 
     criterion = nn.BCELoss()
     
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5) # lr dynamic adjustment 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3) # lr dynamic adjustment 
 
     for epoch in range(1, n_epochs + 1):
 
@@ -52,13 +52,27 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cpu"
     print("[Segmentation training done]")
 
 
-def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, device="cpu"):
+def train_segmentation_model(model, train_loader, val_loader, config, device):
+    """Wrapper function to train the segmentation model with the given configuration of the config file."""
+    n_epochs = config["n_epochs_seg"]
+    lr = config["learning_rate_seg"]
+    fit_segmentation(model=model,
+                     n_epochs=n_epochs,
+                     lr=lr,
+                     train_loader=train_loader,
+                     val_loader=val_loader,
+                     device=device
+                     )
+    return model
+
+
+def fit_classification(classifier, target_id, n_epochs, lr, train_loader, val_loader, device="cuda"):
     print(f"--Fitting classifier with {n_epochs} epochs")
 
     criterion = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.Adam(classifier.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5) # lr dynamic adjustment 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3) # lr dynamic adjustment 
 
     for epoch in range(1, n_epochs + 1):
 
@@ -69,7 +83,7 @@ def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, devic
 
         for images, _, info in train_loader:
             images = images.to(device)
-            labels = info["breed_id"].clone().detach().to(device) # TODO (Paul): generalize this function and make the target ID an argument of the function
+            labels = info[target_id].to(device).long()
 
             outputs = classifier(images)
             loss = criterion(outputs, labels)
@@ -89,7 +103,7 @@ def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, devic
         with torch.no_grad():
             for images, _, info in val_loader:
                 images = images.to(device)
-                labels = info["breed_id"].clone().detach().to(device)
+                labels = info[target_id].to(device).long()
 
                 outputs = classifier(images)
                 loss = criterion(outputs, labels)
@@ -100,3 +114,21 @@ def fit_classification(classifier, n_epochs, lr, train_loader, val_loader, devic
         print(f"[Classifier] Epoch {epoch}/{n_epochs} -> Train loss: {avg_train_loss:.4f} | Val loss: {avg_val_loss:.4f}")
         scheduler.step(avg_val_loss) # adjust the lr
     print("[Classifier training done]")
+
+
+def train_classifier(classifier, train_loader, val_loader, config, device):
+    """Wrapper function to train the classifier with the given configuration of the config file."""
+    target_id = config["target_id"]
+    if target_id is None:
+        raise ValueError("Target ID not specified in the config file. Please specify a target ID for the classifier (e.g. 'breed_id').")
+    n_epochs = config["n_epochs_cls"]
+    lr = config["learning_rate_cls"]
+    fit_classification(classifier=classifier,
+                       target_id=target_id,
+                       n_epochs=n_epochs,
+                       lr=lr,
+                       train_loader=train_loader,
+                       val_loader=val_loader,
+                       device=device
+                       )
+    return classifier
