@@ -1,10 +1,11 @@
 import torch
+import warnings
 import torch.nn as nn
 import torchvision.models.segmentation as models
 
 
-# DoubleConv Block
 class DoubleConv(nn.Module):
+    """DoubleConv block"""
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
         self.conv = nn.Sequential(
@@ -19,9 +20,13 @@ class DoubleConv(nn.Module):
     def forward(self, x):
         return self.conv(x)
 
-# Baseline from: https://arc-celt.github.io/pet-segmentation/
-# UNet model (encoder-decoder architecture) # TODO (all): variation of the UNet? See UNet++
+
+## TODO (all): implement variation of  UNet? See UNet++
 class UNet(nn.Module):
+    """
+    UNet model (encoder-decoder architecture) 
+    Baseline copied from: https://arc-celt.github.io/pet-segmentation/
+    """
     def __init__(self, in_channels=3, out_channels=1):
         super(UNet, self).__init__()
         self.enc1 = DoubleConv(in_channels, 64)
@@ -53,7 +58,9 @@ class UNet(nn.Module):
         return torch.sigmoid(self.out_conv(dec1))
 
 
+# TODO (all): consider ResNet101 instead of ResNet50 for the backbone of DeepLabV3 + FCN
 class DeepLabV3(nn.Module):
+    """DeepLabV3 model"""
     def __init__(self, weights=models.DeepLabV3_ResNet50_Weights.DEFAULT):
         super().__init__()
         self.deeplab = models.deeplabv3_resnet50(weights=weights)
@@ -62,10 +69,10 @@ class DeepLabV3(nn.Module):
     def forward(self, x):
         out = self.deeplab(x)['out']
         return torch.sigmoid(out) # sigmoid bc we want probabs
-    
 
-# Fully convolutional model 
+
 class FCN(nn.Module):
+    """Fully Convolutional Network (FCN)"""
     def __init__(self, weights=models.FCN_ResNet50_Weights.DEFAULT):
         super().__init__()
         self.fcn = models.fcn_resnet50(weights=weights)
@@ -74,5 +81,15 @@ class FCN(nn.Module):
     def forward(self, x):
         out = self.fcn(x)['out']
         return torch.sigmoid(out) # probas
-    
-# TODO (all): consider ResNet101 instead of ResNet50 for the backbone of DeepLabV3 and FCN
+
+
+def select_segmentation_model(model_name):
+    if model_name == "UNet":
+        return UNet()
+    elif model_name == "DeepLabV3":
+        return DeepLabV3()
+    elif model_name == "FCN":
+        return FCN()
+    else:
+        warnings.warn("Incorrect baseline name or model not implemented. Please check the model name in model.py.")
+        return None
