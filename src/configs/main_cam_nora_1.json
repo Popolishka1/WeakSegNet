@@ -1,0 +1,28 @@
+{
+    "data_folder": "data2",
+
+    "train_batch_size": 64,
+    "val_batch_size": 32,
+    "test_batch_size": 64,
+    "val_split": 0.2,
+
+    "image_size": 256,
+
+    "classifier": "ResNet101",
+    "n_classes": 37,
+    "classifier_save_path": "src/models/pet_classifier_Nora1.pth",
+
+    "train_classifier": true,
+    "n_epochs_cls": 5,
+    "learning_rate_cls": 0.001,
+
+    "cam_threshold": 0.3,
+
+    "segmentation_model": "UNet",
+    "weakseg_model_save_path": "src/models/ws_cam_UNet_Nora1.pth",
+
+    "train_segmentation": true,
+    "n_epochs_seg": 5,
+    "learning_rate_seg": 0.0001
+
+  }
