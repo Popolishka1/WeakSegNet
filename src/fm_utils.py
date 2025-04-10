@@ -24,8 +24,6 @@ def parse_args(experiment_name: str):
     return config
 
 
-# Assuming your metric functions (dice_score, iou_score, etc.) are defined elsewhere and imported.
-
 def evaluate_and_visualise_sam(model, dataloader, threshold=0.5, device="cuda", n_samples=1):
     """
     For each image from the dataloader, runs the SAM model to get the prediction,
