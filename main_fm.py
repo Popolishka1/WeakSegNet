@@ -34,7 +34,7 @@ def main():
     ##################################################
     # TO DO: The results are not really good right now, we should try to load the data without any applied transformation.
     # So, modify the load_data_wrapper
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG, test_loader_size=500)
     print("Created data loaders.\n")
     
     ##################################################
@@ -64,7 +64,7 @@ def main():
     #####################################
     # Instead of evaluating metrics and visualizing in two separate stages,
     # process each image as it is predicted.
-    metrics = evaluate_model(segmentation_model, val_loader, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
+    metrics = evaluate_model(segmentation_model, test_loader, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
     print("Final test set evaluation metrics:")
     for k, v in metrics.items():
         print(f"{k}: {v:.4f}")
@@ -74,7 +74,7 @@ def main():
     clear_cuda_cache()
     
     # 5. Visualize predictions.
-    visualise_predictions(config, val_loader, segmentation_model,
+    visualise_predictions(config, test_loader, segmentation_model,
                           n_samples=5, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
     
     clear_cuda_cache()

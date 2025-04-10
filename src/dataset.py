@@ -185,18 +185,19 @@ def data_loading(path: str,
                  data_split_size: tuple,
                  image_size: int = 256,
                  seed: int = 42,
-                 sam : bool = False
+                 sam : bool = False,
+                 test_loader_size = None
                  ):
     """Load Oxford-IIIT Pet Dataset and split into train, val and test sets. Return corresponding loaders."""
     print("\n----Loading data...")
     batch_size_train, batch_size_val, batch_size_test, val_split = data_split_size
 
     if sam:
-        # For SAM, we use minimal transforms (or identity transforms) so the images 
-        # are not modified beyond conversion to tensor (or even skip conversion if desired).
-        # Here, we assume that a tensor conversion is still necessary.
-        minimal_transform = transforms.ToTensor()
-        # Use the same minimal transform for images and masks.
+        # For SAM we only want to resize the images
+        minimal_transform = transforms.Compose([
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor()
+        ])
         train_image_transform = minimal_transform
         train_mask_transform = minimal_transform
         test_image_transform = minimal_transform
@@ -242,12 +243,16 @@ def data_loading(path: str,
     # Create subsets with proper transforms
     train_dataset = Subset(full_train_dataset, train_indices)
     val_dataset = Subset(full_val_dataset, val_indices)
+    # If a test_subset_size is given, create a subset of the test dataset with that number of samples.
+    if test_loader_size is not None:
+        test_dataset = Subset(test_dataset, list(range(min(test_loader_size, len(test_dataset)))))
     
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
     train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=0)
+
 
     print("[Data loaded succesfully]")
     print(f"\nTraining set: {len(train_dataset)} samples")
@@ -256,7 +261,7 @@ def data_loading(path: str,
     return train_loader, val_loader, test_loader
 
 
-def load_data_wrapper(config, sam=False):
+def load_data_wrapper(config, sam=False, test_loader_size=None):
     """"Wrapper function to load data from the config file"""
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
@@ -271,4 +276,4 @@ def load_data_wrapper(config, sam=False):
     # Image size for resize  
     image_size = config["image_size"]
     
-    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size)
+    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size, sam=sam, test_loader_size=test_loader_size)
