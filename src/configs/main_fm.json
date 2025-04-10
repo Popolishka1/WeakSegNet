@@ -8,7 +8,7 @@
   
     "image_size": 256,
   
-    "sam_checkpoint_path": "path/to/sam_vit_h.pth",
+    "sam_checkpoint_path": "../../sam2.1_hiera_small.pt",
     "sam_model_type": "vit_h", 
     "sam_device": "cuda",
     

@@ -9,6 +9,8 @@ def parse_args(expriment_name: str):
         parser = argparse.ArgumentParser(description="Baseline training and evaluation (fully supervised use case)")
     elif expriment_name == "CAM":
         parser = argparse.ArgumentParser(description="CAM training and evaluation (weakly supervised use case)")
+    elif expriment_name == "SAM":
+        parser = argparse.ArgumentParser(description="SAM segmentation with foundation models (weakly supervised use case)")
     else:
         warnings.warn("Experiment name not recognized. Defaulting to Baseline.")
         parser = argparse.ArgumentParser(description="Baseline segmentation training and evaluation (fully supervised use case)") 

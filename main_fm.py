@@ -7,9 +7,11 @@ import torch
 import os
 import requests
 import numpy as np
-from src.utils import load_device, clear_cuda_cache
-from src.fm_utils import parse_args, evaluate_and_visualise_sam
+from src.utils import load_device, clear_cuda_cache, parse_args
+from src.metrics import evaluate_model, save_metrics_to_csv
+from src.visualisation import visualise_predictions
 from src.dataset import load_data_wrapper
+from src.fm_utils import SAMWrapper
 
 from sam2.build_sam import build_sam2
 from sam2.sam2_image_predictor import SAM2ImagePredictor
@@ -17,19 +19,22 @@ from sam2.sam2_image_predictor import SAM2ImagePredictor
 
 def main():
     # Load configuration from .json config file
-    config = parse_args(experiment_name="SAM")
+    config = parse_args(expriment_name="SAM")
     print("Loaded the configs.\n")
     
     # Set device and clear CUDA cache
     DEVICE = load_device()
     clear_cuda_cache()
     
+    # Set sam flag to True
+    SAM_FLAG = True
+    
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
     # TO DO: The results are not really good right now, we should try to load the data without any applied transformation.
     # So, modify the load_data_wrapper
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config)
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
     print("Created data loaders.\n")
     
     ##################################################
@@ -51,41 +56,7 @@ def main():
 
     sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=DEVICE)
     predictor = SAM2ImagePredictor(sam2_model)
-    
-    class SAMWrapper:
-        def __init__(self, predictor, device):
-            self.predictor = predictor
-            self.device = device
-
-        def __call__(self, images):
-            """
-            Processes a batch of images using the SAM2 predictor.
-            Expects images as a batch of tensors (C, H, W). Internally loops per image.
-            """
-            outputs = []
-            for image in images:
-                # Convert tensor (C,H,W) to a NumPy image (H,W,C) and scale to 0-255.
-                image_np = image.permute(1, 2, 0).cpu().numpy()
-                image_np = (image_np * 255).astype(np.uint8)
-                self.predictor.set_image(image_np)
-                
-                # Define a weak prompt: use the image center dynamically.
-                H, W, _ = image_np.shape
-                input_point = np.array([[W // 2, H // 2]])  # Note the order: (x, y)
-                input_label = np.array([1])
-                
-                masks, _, _ = self.predictor.predict(
-                    point_coords=input_point,
-                    point_labels=input_label,
-                    multimask_output=False,
-                )
-                
-                outputs.append(torch.from_numpy(masks[0]).float().to(self.device))
-            return torch.stack(outputs, dim=0)
-
-        def eval(self):
-            return self
-    
+        
     segmentation_model = SAMWrapper(predictor, DEVICE)
     
     #####################################
@@ -93,11 +64,18 @@ def main():
     #####################################
     # Instead of evaluating metrics and visualizing in two separate stages,
     # process each image as it is predicted.
-    evaluate_and_visualise_sam(model=segmentation_model, 
-                               dataloader=test_loader, 
-                               device=DEVICE,
-                               threshold=0.8,
-                               n_samples=1)
+    metrics = evaluate_model(segmentation_model, val_loader, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
+    print("Final test set evaluation metrics:")
+    for k, v in metrics.items():
+        print(f"{k}: {v:.4f}")
+        
+    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
+    
+    clear_cuda_cache()
+    
+    # 5. Visualize predictions.
+    visualise_predictions(config, val_loader, segmentation_model,
+                          n_samples=5, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
     
     clear_cuda_cache()
 

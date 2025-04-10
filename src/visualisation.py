@@ -32,7 +32,7 @@ def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
     return overlay
 
 
-def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5, device="cuda"):
+def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5, device="cuda", sam=False):
     print(f"\n----Visualizing {n_samples} predicted masks from the trained model")
     model.eval()
     all_samples = [] # samples from the test loader
@@ -59,9 +59,29 @@ def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5,
         img = np.clip(img, 0, 1)
 
         # Get model prediction
-        outputs = model(img_tensor.unsqueeze(0))
-        predicted_mask = (outputs > threshold).float()
-        pred_mask = predicted_mask[0].cpu().squeeze().numpy()
+        if sam:
+            # --- SAM2 branch ---
+            # For a SAM2 model, we assume you need to convert the tensor to a numpy image,
+            # call set_image, and then predict using a center-point prompt.
+            image_np = (img * 255).astype(np.uint8)
+            model.predictor.set_image(image_np)
+            H, W, _ = image_np.shape
+            input_point = np.array([[W // 2, H // 2]])  # (x, y) center of image
+            input_label = np.array([1])
+            masks, _, _ = model.predictor.predict(
+                point_coords=input_point,
+                point_labels=input_label,
+                multimask_output=False,
+            )
+            # Convert mask to torch tensor then apply threshold
+            pred_mask = (torch.from_numpy(masks[0]).float() > threshold).cpu().squeeze().numpy()
+        else:
+            # --- Batched branch ---
+            # Assume the model supports batched inference.
+            outputs = model(img_tensor.unsqueeze(0))  # (1, C, H, W) input
+            predicted_mask = (outputs > threshold).float()
+            pred_mask = predicted_mask[0].cpu().squeeze().numpy()
+        
         gt_mask_np = gt_mask.cpu().squeeze().numpy()
 
         # Create an overlay image

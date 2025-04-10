@@ -184,17 +184,29 @@ def inverse_normalize(tensor):
 def data_loading(path: str,
                  data_split_size: tuple,
                  image_size: int = 256,
-                 seed: int = 42
+                 seed: int = 42,
+                 sam : bool = False
                  ):
     """Load Oxford-IIIT Pet Dataset and split into train, val and test sets. Return corresponding loaders."""
     print("\n----Loading data...")
     batch_size_train, batch_size_val, batch_size_test, val_split = data_split_size
 
-    # Train data gets augmentations
-    train_image_transform, train_mask_transform = data_transform(image_size=image_size, train=True)
-    
-    # Test and validation data get basic transforms (no augmentations)
-    test_image_transform, test_mask_transform = data_transform(image_size=image_size, train=False)
+    if sam:
+        # For SAM, we use minimal transforms (or identity transforms) so the images 
+        # are not modified beyond conversion to tensor (or even skip conversion if desired).
+        # Here, we assume that a tensor conversion is still necessary.
+        minimal_transform = transforms.ToTensor()
+        # Use the same minimal transform for images and masks.
+        train_image_transform = minimal_transform
+        train_mask_transform = minimal_transform
+        test_image_transform = minimal_transform
+        test_mask_transform = minimal_transform
+    else:
+        # When not using SAM, use the full data transformation pipeline:
+        # Train data gets augmentations.
+        train_image_transform, train_mask_transform = data_transform(image_size=image_size, train=True)
+        # Test and validation data get basic transforms (no augmentations).
+        test_image_transform, test_mask_transform = data_transform(image_size=image_size, train=False)
 
     # Load train dataset
     full_train_dataset = OxfordPet(
@@ -244,7 +256,7 @@ def data_loading(path: str,
     return train_loader, val_loader, test_loader
 
 
-def load_data_wrapper(config):
+def load_data_wrapper(config, sam=False):
     """"Wrapper function to load data from the config file"""
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
