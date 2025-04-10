@@ -1,13 +1,9 @@
 import torch
 from torch.utils.data import DataLoader
 
-from src.bbox_utils import generate_pseudo_masks
-from src.models import select_segmentation_model
+from src.bbox_utils import generate_pseudo_masks, generate_bboxs, generate_cams, evaluate, visualise_results, save_pseudo_masks
 from src.dataset import load_data_wrapper, PseudoMaskDataset
-from src.fit import train_classifier, train_segmentation_model
 from src.utils import load_device, clear_cuda_cache, parse_args
-from src.visualisation import visualise_predictions, visualise_cams
-from src.metrics import evaluate_model, evaluate_classifier, save_metrics_to_csv
 
 
 def main():
@@ -15,7 +11,6 @@ def main():
     config = parse_args(expriment_name="BBOX")
 
     train_loader, val_loader, test_loader = load_data_wrapper(config=config)
-
     
     total_dice = 0.0
     total_accuracy = 0.0
@@ -27,6 +22,7 @@ def main():
     print(n_batches)
     output_dir = "saved_pseudo_masks"
     os.makedirs(output_dir, exist_ok=True)
+    
     for batch_idx, (image_batch, mask_batch, info_batch) in enumerate(train_loader, start=1):
         print(f"Batch number: {batch_idx}")
         cams = generate_cams(image_batch)
