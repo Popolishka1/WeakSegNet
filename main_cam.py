@@ -1,4 +1,4 @@
-import torch
+mport torch
 from torch.utils.data import DataLoader
 
 from src.cam_utils import generate_pseudo_masks
@@ -64,11 +64,12 @@ def main():
     print(f"\n----Generating pseudo masks from {cam_type} with cam_threshold={cam_threshold}...")
 
     pseudo_masks = generate_pseudo_masks(dataloader=train_loader,
-                                         classifier=classifier,
-                                         cam_type=cam_type,
-                                         cam_threshold=cam_threshold,
-                                         device=DEVICE
-                                        )
+                                     classifier=classifier,
+                                     cam_type=cam_type,
+                                     cam_threshold=cam_threshold,
+                                     device=DEVICE,
+                                     use_dense_crf=config.get("use_dense_crf", False)
+                                    )
     clear_cuda_cache()
     
     # Create a new train dataset with pseudo masks
