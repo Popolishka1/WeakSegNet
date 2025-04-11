@@ -11,6 +11,9 @@ import matplotlib.patches as patches
 from skimage.segmentation import slic
 from skimage.util import img_as_float
 
+from dataset import inverse_normalize
+
+
 def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
     """
     One of the possible metric that we can use: dice score between predicted masks and ground truth.

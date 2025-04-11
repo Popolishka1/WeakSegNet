@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import DataLoader
 
@@ -18,6 +19,8 @@ def main():
     total_precision = 0.0
     total_recall = 0.0
     n_batches = len(train_loader)
+    batch_size_test = 1
+    
     batch_size = batch_size_test
     print(n_batches)
     output_dir = "saved_pseudo_masks"
