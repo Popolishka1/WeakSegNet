@@ -2,7 +2,51 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
-# TODO (all): find a way to refine cams to get better pseudo masks (dense CRF for instance)
+# TODO (INPROGRESS): find a way to refine cams to get better pseudo masks (dense CRF for instance)
+import numpy as np
+import pydensecrf.densecrf as dcrf
+import pydensecrf.utils as crf_utils
+
+def apply_dense_crf(img_tensor, cam):
+    """
+    Refine the CAM using Dense CRF.
+
+    Args:
+        img_tensor: torch.Tensor, image tensor (C, H, W) in [0,1]
+        cam: torch.Tensor, CAM probability map (H, W) in [0,1]
+    
+    Returns:
+        refined_cam: torch.Tensor, refined probability map (H, W)
+    """
+    # Convert the input image to numpy array and ensure it's C-contiguous
+    img_np = img_tensor.cpu().permute(1, 2, 0).numpy()
+    img_uint8 = np.ascontiguousarray((img_np * 255).astype(np.uint8))
+    
+    # Get the CAM as a numpy array (H, W)
+    prob_map = cam.cpu().numpy()
+    H, W = prob_map.shape
+
+    # Set up the CRF model
+    d = dcrf.DenseCRF2D(W, H, 2)
+    
+    # Create unary energy from the probability map for two classes (background and foreground)
+    probs = np.stack([1 - prob_map, prob_map], axis=0)
+    U = crf_utils.unary_from_softmax(probs)
+    d.setUnaryEnergy(U.astype(np.float32))
+
+    # Add pairwise Gaussian smoothing term (spatial proximity)
+    d.addPairwiseGaussian(sxy=3, compat=3)
+    # Add pairwise bilateral term (color and spatial consistency)
+    d.addPairwiseBilateral(sxy=80, srgb=13, rgbim=img_uint8, compat=10)
+
+    # Run inference for 5 iterations
+    Q = d.inference(5)
+    refined_prob = np.array(Q)[1].reshape((H, W))
+    
+    # Return the refined probability as a torch tensor
+    refined_cam = torch.tensor(refined_prob, dtype=torch.float32)
+    return refined_cam
+
 
 class CAMGenerator:
     def __init__(self, classifier):
@@ -177,21 +221,27 @@ def get_cam_generator(classifier, cam_type="CAM"):
     return cam_generator, generate_cam_func, cam_type
 
 
-def generate_pseudo_masks_(dataloader, cam_generator, generate_cam_func, cam_threshold, device):
+
+def generate_pseudo_masks_(dataloader, cam_generator, generate_cam_func, cam_threshold, device, use_dense_crf=False):
     """Internal helper to loop through dataloader and generate CAM-based pseudo masks."""
+    
+    if use_dense_crf:
+        print("Refining pseudo masks with Dense CRF...")
+
     pseudo_masks = []
     for images, _, _ in dataloader:
         images = images.to(device)
         for img in images:
             cam, _ = generate_cam_func(cam_generator, img)
+            if use_dense_crf:
+                cam = apply_dense_crf(img, cam)
             pseudo_mask = cam_to_binary_mask(cam, cam_threshold)
             pseudo_masks.append(pseudo_mask.cpu())
     return pseudo_masks
 
-# TODO: might be better to use DenseCRF to refine the masks
-def generate_pseudo_masks(dataloader, classifier, cam_type='CAM', cam_threshold=0.5, device='cpu'):
-    """Generate pseudo masks using a provided CAM generator and method."""
 
+# IN PROGRESS: might be better to use DenseCRF to refine the masks
+def generate_pseudo_masks(dataloader, classifier, cam_type='CAM', cam_threshold=0.5, device='cpu', use_dense_crf=False):
     cam_generator, generate_cam_func, model_type = get_cam_generator(classifier=classifier, cam_type=cam_type)
 
     if model_type == 'CAM':
@@ -200,13 +250,13 @@ def generate_pseudo_masks(dataloader, classifier, cam_type='CAM', cam_threshold=
                                           cam_generator=cam_generator,
                                           generate_cam_func=generate_cam_func, 
                                           cam_threshold=cam_threshold,
-                                          device=device
-                                          )
+                                          device=device,
+                                          use_dense_crf=use_dense_crf)
     else:
         with torch.enable_grad():
             return generate_pseudo_masks_(dataloader=dataloader,
                                           cam_generator=cam_generator,
                                           generate_cam_func=generate_cam_func,
                                           cam_threshold=cam_threshold,
-                                          device=device
-                                          )
+                                          device=device,
+                                          use_dense_crf=use_dense_crf)
