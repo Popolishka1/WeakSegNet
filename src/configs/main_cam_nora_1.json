@@ -1,28 +1,26 @@
 {
-    "data_folder": "data2",
-
-    "train_batch_size": 64,
+    "data_folder": "data_2",
+    "train_batch_size": 32,
     "val_batch_size": 32,
     "test_batch_size": 64,
     "val_split": 0.2,
-
     "image_size": 256,
-
     "classifier": "ResNet101",
+    "target_id": "class_id",
     "n_classes": 37,
-    "classifier_save_path": "src/models/pet_classifier_Nora1.pth",
-
+    "classifier_save_path": "src/models/classifier_ResNet101_15e.pth",
     "train_classifier": true,
-    "n_epochs_cls": 5,
-    "learning_rate_cls": 0.001,
-
-    "cam_threshold": 0.3,
-
-    "segmentation_model": "UNet",
-    "weakseg_model_save_path": "src/models/ws_cam_UNet_Nora1.pth",
-
+    "n_epochs_cls": 15,
+    "learning_rate_cls": 0.0001,
+    "cam_model": "Grad-CAM",
+    "cam_threshold": 0.4,
+    "cam_visualisation_save_path": "results/cam/cam_examples_3.png",
+    "use_dense_crf": true,
+    "segmentation_model": "DeepLabV3",
+    "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3_10e.pth",
     "train_segmentation": true,
-    "n_epochs_seg": 5,
-    "learning_rate_seg": 0.0001
-
-  }
+    "n_epochs_seg": 10,
+    "learning_rate_seg": 0.0001,
+    "segmentation_metrics_save_path": "results/cam/segmentation_metrics_3.csv",
+    "segmentation_visualisation_save_path": "results/cam/segmentation_examples_3.png"
+}
