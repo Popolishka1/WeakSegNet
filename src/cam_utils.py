@@ -22,8 +22,12 @@ def apply_dense_crf(img_tensor, cam):
     img_np = img_tensor.cpu().permute(1, 2, 0).numpy()
     img_uint8 = np.ascontiguousarray((img_np * 255).astype(np.uint8))
     
-    # Get the CAM as a numpy array (H, W)
-    prob_map = cam.cpu().numpy()
+    # Check if the CAM requires grad (e.g., CAM-GRAD); if so, detach before converting to numpy.
+    if cam.requires_grad:
+        prob_map = cam.detach().cpu().numpy()
+    else:
+        prob_map = cam.cpu().numpy()
+
     H, W = prob_map.shape
 
     # Set up the CRF model
@@ -34,9 +38,8 @@ def apply_dense_crf(img_tensor, cam):
     U = crf_utils.unary_from_softmax(probs)
     d.setUnaryEnergy(U.astype(np.float32))
 
-    # Add pairwise Gaussian smoothing term (spatial proximity)
+    # Add pairwise terms
     d.addPairwiseGaussian(sxy=3, compat=3)
-    # Add pairwise bilateral term (color and spatial consistency)
     d.addPairwiseBilateral(sxy=80, srgb=13, rgbim=img_uint8, compat=10)
 
     # Run inference for 5 iterations
@@ -46,6 +49,7 @@ def apply_dense_crf(img_tensor, cam):
     # Return the refined probability as a torch tensor
     refined_cam = torch.tensor(refined_prob, dtype=torch.float32)
     return refined_cam
+
 
 
 class CAMGenerator:
