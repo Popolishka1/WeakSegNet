@@ -5,7 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from src.dataset import inverse_normalize
-from src.cam_utils import  cam_to_binary_mask, get_cam_generator
+from src.cam_utils import  cam_to_binary_mask, get_cam_generator, apply_dense_crf
 
 
 def create_overlay(img, gt_mask, pred_mask, alpha=0.5):
@@ -137,7 +137,7 @@ def visualise_cams(config, dataloader, classifier, cam_type='CAM', cam_threshold
         img = np.clip(img, 0, 1)
 
         # Create a heatmap overlay from the raw CAM
-        cam_np = cam.cpu().numpy()
+        cam_np = cam.detach().cpu().numpy() if cam.requires_grad else cam.cpu().numpy()
         heatmap = np.uint8(255 * cam_np)
         heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
         overlayed_img = cv2.addWeighted(np.uint8(255 * img), 0.5, heatmap, 0.5, 0)
