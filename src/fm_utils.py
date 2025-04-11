@@ -1,4 +1,3 @@
-# TODO (Carl): generate weak mask from foundations models
 import numpy as np
 import torch
 

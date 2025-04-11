@@ -64,7 +64,7 @@ def main():
     #####################################
     # Instead of evaluating metrics and visualizing in two separate stages,
     # process each image as it is predicted.
-    metrics = evaluate_model(segmentation_model, test_loader, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
+    metrics = evaluate_model(segmentation_model, test_loader, threshold=0.5, device=DEVICE)
     print("Final test set evaluation metrics:")
     for k, v in metrics.items():
         print(f"{k}: {v:.4f}")

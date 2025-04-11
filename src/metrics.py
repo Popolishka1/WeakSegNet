@@ -53,7 +53,7 @@ def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
     return precision.item(), recall.item()
 
 
-def evaluate_model(model, test_loader, threshold=0.5, device="cuda", sam=False):
+def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
     """
     Evaluate segmentation model performance on test set.
     Gloval evaluation of the model performance (metrics are not averaged per batch vut global).
@@ -67,19 +67,8 @@ def evaluate_model(model, test_loader, threshold=0.5, device="cuda", sam=False):
         for images, gt_masks, _ in test_loader:
             images = images.to(device)
             gt_masks = gt_masks.to(device)
-            
-            if sam:
-                # Process each image individually (for SAM2-style predictors)
-                batch_outputs = []
-                batch_size = images.shape[0]
-                for idx in range(batch_size):
-                    single_image = images[idx].unsqueeze(0)
-                    pred_mask = model(single_image).squeeze(0)
-                    batch_outputs.append(pred_mask.cpu())
-                outputs = torch.stack(batch_outputs, dim=0)
-            else:
-                # The model supports batched inputs.
-                outputs = model(images)
+                        
+            outputs = model(images)
 
             all_outputs.append(outputs.cpu())
             all_gt_masks.append(gt_masks.cpu())

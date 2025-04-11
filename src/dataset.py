@@ -193,15 +193,27 @@ def data_loading(path: str,
     batch_size_train, batch_size_val, batch_size_test, val_split = data_split_size
 
     if sam:
-        # For SAM we only want to resize the images
-        minimal_transform = transforms.Compose([
+        def mask_to_tensor_no_scaling(mask):
+            # Convert the PIL image to a NumPy array (with uint8, where values are 0 and 1)
+            mask_np = np.array(mask, dtype=np.uint8)
+            # Convert the array to a float tensor without dividing by 255.
+            mask_tensor = torch.from_numpy(mask_np).float()
+            return mask_tensor
+
+        minimal_transform_img = transforms.Compose([
             transforms.Resize((image_size, image_size)),
-            transforms.ToTensor()
+            transforms.ToTensor(),  # for RGB images this is fine.
         ])
-        train_image_transform = minimal_transform
-        train_mask_transform = minimal_transform
-        test_image_transform = minimal_transform
-        test_mask_transform = minimal_transform
+
+        minimal_transform_mask = transforms.Compose([
+            transforms.Resize((image_size, image_size), interpolation=Image.NEAREST),
+            transforms.Lambda(mask_to_tensor_no_scaling)
+        ])
+
+        train_image_transform = minimal_transform_img
+        train_mask_transform = minimal_transform_mask
+        test_image_transform = minimal_transform_img
+        test_mask_transform = minimal_transform_mask
     else:
         # When not using SAM, use the full data transformation pipeline:
         # Train data gets augmentations.
