@@ -184,7 +184,8 @@ def inverse_normalize(tensor):
 def data_loading(path: str,
                  data_split_size: tuple,
                  image_size: int = 256,
-                 seed: int = 42
+                 seed: int = 42,
+                 num_workers: int = 0
                  ):
     """Load Oxford-IIIT Pet Dataset and split into train, val and test sets. Return corresponding loaders."""
     print("\n----Loading data...")
@@ -233,9 +234,9 @@ def data_loading(path: str,
     
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
-    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=num_workers)
 
     print("[Data loaded succesfully]")
     print(f"\nTraining set: {len(train_dataset)} samples")
