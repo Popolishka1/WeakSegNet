@@ -1,22 +1,24 @@
 {
-    "data_folder": "data",
-  
-    "train_batch_size": 10,
-    "val_batch_size": 10,
-    "test_batch_size": 10,
-    "val_split": 0.2,
-  
-    "image_size": 256,
-  
-    "sam_checkpoint_path": "../../sam2.1_hiera_small.pt",
-    "sam_model_type": "vit_h", 
-    "sam_device": "cuda",
-    
-    "sam_visualisation_save_path": "results/sam/sam_examples.png",
-  
-    "sam_threshold": 0.5,
-  
-    "segmentation_metrics_save_path": "results/sam/sam_segmentation_metrics.csv",
-    "segmentation_visualisation_save_path": "results/sam/sam_segmentation_examples.png"
-  }
-  
+  "data_folder": "data",
+
+  "train_batch_size": 10,
+  "val_batch_size": 10,
+  "test_batch_size": 10,
+  "val_split": 0.2,
+
+  "image_size": 256,
+
+  "sam_checkpoint_path": "../../sam2.1_hiera_small.pt",
+  "sam_model_type": "vit_h", 
+  "sam_device": "cuda",
+  "sam_visualisation_save_path": "results/sam/sam_examples.png",
+  "sam_threshold": 0.5,
+
+  "segmentation_model": "DeepLabV3",
+  "weakseg_model_save_path": "src/models/ws_sam_DeepLabV3.pth",
+  "train_segmentation": true,
+  "n_epochs_seg": 5,
+  "learning_rate_seg": 0.0001,
+  "segmentation_metrics_save_path": "results/sam/sam_segmentation_metrics.csv",
+  "segmentation_visualisation_save_path": "results/sam/sam_segmentation_examples.png"
+}
