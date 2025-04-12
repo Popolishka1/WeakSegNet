@@ -29,7 +29,7 @@ class SAMWrapper:
                 multimask_output=False,
             )
             
-            outputs.append(torch.from_numpy(masks[0]).float().to(self.device))
+            outputs.append(torch.from_numpy(masks[0]).unsqueeze(0).float().to(self.device))
         return torch.stack(outputs, dim=0)
 
     def eval(self):

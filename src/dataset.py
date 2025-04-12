@@ -185,8 +185,7 @@ def data_loading(path: str,
                  data_split_size: tuple,
                  image_size: int = 256,
                  seed: int = 42,
-                 sam : bool = False,
-                 test_loader_size = None
+                 sam: bool = False
                  ):
     """Load Oxford-IIIT Pet Dataset and split into train, val and test sets. Return corresponding loaders."""
     print("\n----Loading data...")
@@ -194,10 +193,8 @@ def data_loading(path: str,
 
     if sam:
         def mask_to_tensor_no_scaling(mask):
-            # Convert the PIL image to a NumPy array (with uint8, where values are 0 and 1)
             mask_np = np.array(mask, dtype=np.uint8)
-            # Convert the array to a float tensor without dividing by 255.
-            mask_tensor = torch.from_numpy(mask_np).float()
+            mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
             return mask_tensor
 
         minimal_transform_img = transforms.Compose([
@@ -255,10 +252,7 @@ def data_loading(path: str,
     # Create subsets with proper transforms
     train_dataset = Subset(full_train_dataset, train_indices)
     val_dataset = Subset(full_val_dataset, val_indices)
-    # If a test_subset_size is given, create a subset of the test dataset with that number of samples.
-    if test_loader_size is not None:
-        test_dataset = Subset(test_dataset, list(range(min(test_loader_size, len(test_dataset)))))
-    
+        
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
     train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=0)
@@ -273,7 +267,7 @@ def data_loading(path: str,
     return train_loader, val_loader, test_loader
 
 
-def load_data_wrapper(config, sam=False, test_loader_size=None):
+def load_data_wrapper(config, sam=False):
     """"Wrapper function to load data from the config file"""
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
@@ -288,4 +282,4 @@ def load_data_wrapper(config, sam=False, test_loader_size=None):
     # Image size for resize  
     image_size = config["image_size"]
     
-    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size, sam=sam, test_loader_size=test_loader_size)
+    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size, sam=sam)

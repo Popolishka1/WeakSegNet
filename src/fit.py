@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda", sam=False):
+def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda"):
     print(f"--Fitting segmentation model with {n_epochs} epochs")
 
     criterion = nn.BCELoss()
@@ -20,8 +20,6 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
         for images, target_masks, _ in train_loader:
             images = images.to(device)
             target_masks = target_masks.to(device)
-            if sam:
-                target_masks = target_masks.unsqueeze(1)
 
             outputs = model(images)
             loss = criterion(outputs, target_masks)
@@ -42,8 +40,6 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
             for images, gt_masks, _ in val_loader:
                 images = images.to(device)
                 gt_masks = gt_masks.to(device)
-                if sam:
-                    gt_masks = gt_masks.unsqueeze(1)
 
                 outputs = model(images)
                 loss = criterion(outputs, gt_masks)
@@ -56,7 +52,7 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
     print("[Segmentation training done]")
 
 
-def train_segmentation_model(model, train_loader, val_loader, config, device, sam=False):
+def train_segmentation_model(model, train_loader, val_loader, config, device):
     """Wrapper function to train the segmentation model with the given configuration of the config file."""
     n_epochs = config["n_epochs_seg"]
     lr = config["learning_rate_seg"]
@@ -66,7 +62,6 @@ def train_segmentation_model(model, train_loader, val_loader, config, device, sa
                      train_loader=train_loader,
                      val_loader=val_loader,
                      device=device,
-                     sam=sam
                      )
     return model
 

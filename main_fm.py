@@ -37,7 +37,7 @@ def zero_shot_SAM():
     ##################################################
     # TO DO: The results are not really good right now, we should try to load the data without any applied transformation.
     # So, modify the load_data_wrapper
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG, test_loader_size=100)
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
     print("Created data loaders.\n")
     
     ##################################################
@@ -98,7 +98,7 @@ def pseudo_mask_SAM():
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG, test_loader_size=1000)
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
     print("Data loaders created.\n")
     
     ##################################################
@@ -166,8 +166,7 @@ def pseudo_mask_SAM():
                                                       train_loader=train_loader_pseudo,
                                                       val_loader=val_loader,
                                                       config=config,
-                                                      device=DEVICE,
-                                                      sam=True
+                                                      device=DEVICE
                                                       )
         torch.save(segmentation_model.state_dict(), config["weakseg_model_save_path"])
         clear_cuda_cache()
@@ -193,7 +192,6 @@ def pseudo_mask_SAM():
                           n_samples=5,
                           threshold=0.5,
                           device=DEVICE,
-                          sam=True
                           )
     clear_cuda_cache()
 
@@ -205,4 +203,4 @@ def main(zero_shot: bool):
         pseudo_mask_SAM()
 
 if __name__ == "__main__":
-    main(zero_shot=True)
+    main(zero_shot=False)
