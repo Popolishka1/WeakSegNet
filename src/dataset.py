@@ -192,7 +192,7 @@ def data_loading(path: str,
     batch_size_train, batch_size_val, batch_size_test, val_split = data_split_size
 
     if sam:
-        def mask_to_tensor_no_scaling(mask):
+        def mask_to_tensor(mask):
             mask_np = np.array(mask, dtype=np.uint8)
             mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
             return mask_tensor
@@ -204,7 +204,7 @@ def data_loading(path: str,
 
         minimal_transform_mask = transforms.Compose([
             transforms.Resize((image_size, image_size), interpolation=Image.NEAREST),
-            transforms.Lambda(mask_to_tensor_no_scaling)
+            transforms.Lambda(mask_to_tensor)
         ])
 
         train_image_transform = minimal_transform_img
@@ -250,7 +250,7 @@ def data_loading(path: str,
                                               )
     
     # Create subsets with proper transforms
-    train_dataset = Subset(full_train_dataset, train_indices)
+    train_dataset = Subset(full_train_dataset, train_indices)    
     val_dataset = Subset(full_val_dataset, val_indices)
         
     # Create train, val & test loaders
