@@ -1,13 +1,13 @@
 import torch
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import cv2
 import numpy as np
 import torch.nn.functional as F
 import torchvision.models as models
 import torchvision.transforms as transforms
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from dataset import inverse_normalize, data_loading, load_data_wrapper, PseudoMaskDataset
+import os
+
 
 def bboxs_to_pseudo_mask(bounding_box, image):
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
@@ -123,37 +123,50 @@ def generate_cams(images):
     return [generate_cam(inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for image in images]
 
 def visualise_results(image, bbox, mask, pseudo_mask, variant="GrabCut"):
-    image = inverse_normalize(image).permute(1, 2, 0).cpu().numpy()
-    mask = mask.squeeze().cpu().numpy()
-    x_min = bbox[0]
-    y_min = bbox[1]
-    x_max = bbox[2]
-    y_max = bbox[3]
-    plt.figure(figsize=(15, 5))
+    # Convert tensors to numpy arrays
+    image_np = inverse_normalize(image).permute(1, 2, 0).cpu().numpy()
+    mask_np = mask.squeeze().cpu().numpy()
+    pseudo_mask_np = pseudo_mask.squeeze().cpu().numpy() if isinstance(pseudo_mask, torch.Tensor) else pseudo_mask
 
-    # 1. Plot image with bounding box
-    plt.subplot(1, 3, 1)
-    plt.imshow(image)
-    rect = patches.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
-                            linewidth=2, edgecolor='red', facecolor='none')
-    plt.gca().add_patch(rect)
-    plt.title("Image with Bounding Box")
-    plt.axis('off')
+    # Convert numpy arrays to PIL Images
+    img_pil = Image.fromarray((image_np * 255).clip(0, 255).astype(np.uint8))
+    mask_pil = Image.fromarray((mask_np * 255).clip(0, 255).astype(np.uint8))
+    pseudo_mask_pil = Image.fromarray((pseudo_mask_np * 255).clip(0, 255).astype(np.uint8))
 
-    # 2. Plot the ground truth mask
-    plt.subplot(1, 3, 2)
-    plt.imshow(mask, cmap="gray")
-    plt.title("Ground Truth Mask")
-    plt.axis('off')
+    # Create drawing context for bounding box
+    draw = ImageDraw.Draw(img_pil)
+    x_min, y_min, x_max, y_max = bbox
+    draw.rectangle([x_min, y_min, x_max, y_max], outline="red", width=2)
 
-    # Plot the pseudo mask
-    plt.subplot(1, 3, 3)
-    plt.imshow(pseudo_mask, cmap="gray")
-    plt.title(f"Pseudo Mask {variant}")
-    plt.axis('off')
+    # Create composite image
+    total_width = img_pil.width * 3
+    max_height = max(img_pil.height, mask_pil.height, pseudo_mask_pil.height)
+    composite = Image.new("RGB", (total_width, max_height + 30), "white")  # +30 for text
+    
+    # Paste images with labels
+    fonts_folder = os.path.join(os.environ["WINDIR"], "Fonts") if os.name == 'nt' else "/usr/share/fonts"
+    try:
+        font = ImageFont.truetype(os.path.join(fonts_folder, "arial.ttf"), 14)
+    except:
+        font = ImageFont.load_default()
 
-    plt.tight_layout()
-    plt.show()
+    # Image with bounding box
+    composite.paste(img_pil, (0, 0))
+    draw = ImageDraw.Draw(composite)
+    draw.text((img_pil.width//2 - 40, img_pil.height + 5), 
+             "Image with BBox", fill="black", font=font)
+
+    # Ground truth mask
+    composite.paste(mask_pil, (img_pil.width, 0))
+    draw.text((img_pil.width + mask_pil.width//2 - 50, mask_pil.height + 5), 
+             "Ground Truth Mask", fill="black", font=font)
+
+    # Pseudo mask
+    composite.paste(pseudo_mask_pil, (img_pil.width*2, 0))
+    draw.text((img_pil.width*2 + pseudo_mask_pil.width//2 - 40, pseudo_mask_pil.height + 5), 
+             f"{variant} Mask", fill="black", font=font)
+
+    composite.show()
 
 def save_pseudo_masks(pseudo_masks, batch_idx, output_dir):
     for idx, pseudo_mask in enumerate(pseudo_masks):

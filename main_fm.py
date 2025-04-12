@@ -7,7 +7,7 @@ import torch
 import torchvision
 from src.fm_utils import load_device, clear_cuda_cache, parse_args
 from src.dataset import load_data_wrapper
-import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
 from segment_anything import SamPredictor, sam_model_registry
 import requests
 import numpy as np
@@ -70,24 +70,33 @@ def main():
 
         return torch.from_numpy(masks[0]).float()
     
+
     for batch_idx, (images, labels) in enumerate(train_loader):
-            images, labels = images.to(DEVICE), labels.to(DEVICE)
-            SAM_masks = torch.stack([sam_masker(img) for img in images]).to(DEVICE)
+        images, labels = images.to(DEVICE), labels.to(DEVICE)
+        SAM_masks = torch.stack([sam_masker(img) for img in images]).to(DEVICE)
 
-            fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-            img = images[0].cpu().permute(1, 2, 0).numpy()
-            sams = SAM_masks[0].cpu().numpy()
+        img_tensor = images[0].cpu()
+        sam_mask = SAM_masks[0].cpu().numpy()
 
-            ax[0].imshow(img)
-            ax[0].set_title("Input Image")
-            ax[0].axis("off")
+        img_np = img_tensor.permute(1, 2, 0).numpy()
+        img_np = (img_np * 255).astype(np.uint8)  
+        img_pil = Image.fromarray(img_np)
 
-            ax[1].imshow(img)
-            ax[1].imshow(sams, alpha=0.5)
-            ax[1].set_title("SAM Mask")
-            ax[1].axis("off")
+        sam_mask = sam_mask.squeeze().astype(np.uint8) 
 
-            plt.show()
+        overlay = Image.new('RGBA', img_pil.size, (255, 0, 0, 0))
+        alpha = Image.fromarray((sam_mask * 128).astype(np.uint8))
+        overlay.putalpha(alpha)
+
+        combined = Image.alpha_composite(img_pil.convert('RGBA'), overlay)
+
+        total_width = img_pil.width * 2
+        combined_image = Image.new('RGB', (total_width, img_pil.height))
+        combined_image.paste(img_pil, (0, 0))
+        combined_image.paste(combined.convert('RGB'), (img_pil.width, 0))
+
+        combined_image.show()
+
 
 if __name__ == "__main__":
     main()
