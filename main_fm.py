@@ -205,4 +205,4 @@ def main(zero_shot: bool):
         pseudo_mask_SAM()
 
 if __name__ == "__main__":
-    main(zero_shot=False)
+    main(zero_shot=True)

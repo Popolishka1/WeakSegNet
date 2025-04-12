@@ -15,7 +15,7 @@
   "sam_threshold": 0.5,
 
   "segmentation_model": "DeepLabV3",
-  "weakseg_model_save_path": "src/models/ws_sam_DeepLabV3.pth",
+  "weakseg_model_save_path": "src/model_store/ws_sam_DeepLabV3.pth",
   "train_segmentation": true,
   "n_epochs_seg": 5,
   "learning_rate_seg": 0.0001,
