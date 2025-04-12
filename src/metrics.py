@@ -64,18 +64,13 @@ def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
     all_gt_masks = []
 
     with torch.no_grad():
-        i = 0
         for images, gt_masks, _ in test_loader:
-            print(f"---- Processing batch {i} out of {len(test_loader)}")
             images = images.to(device)
             gt_masks = gt_masks.to(device)
-                        
             outputs = model(images)
 
             all_outputs.append(outputs.cpu())
             all_gt_masks.append(gt_masks.cpu())
-            
-            i+=1
     
     all_outputs = torch.cat(all_outputs, dim=0)
     all_gt_masks = torch.cat(all_gt_masks, dim=0)

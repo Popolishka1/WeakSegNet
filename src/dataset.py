@@ -250,7 +250,7 @@ def data_loading(path: str,
                                               )
     
     # Create subsets with proper transforms
-    train_dataset = Subset(full_train_dataset, train_indices)    
+    train_dataset = Subset(full_train_dataset, train_indices)
     val_dataset = Subset(full_val_dataset, val_indices)
         
     # Create train, val & test loaders

@@ -78,7 +78,7 @@ def zero_shot_SAM():
     
     # 5. Visualize predictions.
     visualise_predictions(config, test_loader, segmentation_model,
-                          n_samples=5, threshold=0.5, device=DEVICE, sam=SAM_FLAG)
+                          n_samples=5, threshold=0.5, device=DEVICE)
     
     clear_cuda_cache()
 
@@ -203,4 +203,4 @@ def main(zero_shot: bool):
         pseudo_mask_SAM()
 
 if __name__ == "__main__":
-    main(zero_shot=False)
+    main(zero_shot=True)

@@ -61,7 +61,7 @@ def train_segmentation_model(model, train_loader, val_loader, config, device):
                      lr=lr,
                      train_loader=train_loader,
                      val_loader=val_loader,
-                     device=device,
+                     device=device
                      )
     return model
 

@@ -59,10 +59,9 @@ def visualise_predictions(config, dataloader, model, n_samples=5, threshold=0.5,
         img = np.clip(img, 0, 1)
 
         # Get model prediction
-        outputs = model(img_tensor.unsqueeze(0))  # (1, C, H, W) input
+        outputs = model(img_tensor.unsqueeze(0))
         predicted_mask = (outputs > threshold).float()
         pred_mask = predicted_mask[0].cpu().squeeze().numpy()
-        
         gt_mask_np = gt_mask.cpu().squeeze().numpy()
 
         # Create an overlay image
