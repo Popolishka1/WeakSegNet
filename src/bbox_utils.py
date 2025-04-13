@@ -332,11 +332,8 @@ def load_pseudo_mask(data_dir):
         pseudo_masks.append(mask_tensor)
     return pseudo_masks
 
-def mix_pseudo_masks_exp():
+def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2="./super_pixel/"):
     # Define the directories for your two sets of masks
-    data_dir1 = "./grab_cut_thres_0.3_grad_cam"
-    data_dir2 = "./super_pixel/"
-
     # Load the pseudo masks from each directory
     pseudo_masks1 = load_pseudo_mask(data_dir1)
     pseudo_masks2 = load_pseudo_mask(data_dir2)
@@ -375,7 +372,7 @@ def mix_pseudo_masks_exp():
         batch_tensor = torch.stack(batch, dim=0)
         
         batched_combined_masks.append(batch_tensor)
-
+    return batched_combined_masks
     # Now batched_combined_masks is a list, where each element is a tensor of shape (batch_size, ...)
 
 
