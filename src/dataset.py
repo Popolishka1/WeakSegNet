@@ -250,21 +250,8 @@ def data_loading(path: str,
                                               )
     
     # Create subsets with proper transforms
-    train_dataset = Subset(full_train_dataset, train_indices)
-    
-    # --------------------------------------------------------------------
-    train_dataset = Subset(train_dataset, list(range(min(50, len(train_dataset)))))
-    # --------------------------------------------------------------------
-    
+    train_dataset = Subset(full_train_dataset, train_indices)    
     val_dataset = Subset(full_val_dataset, val_indices)
-    
-    # ------------------------------------------------------------------------------
-    val_dataset = Subset(val_dataset, list(range(min(50, len(val_dataset)))))
-    # ------------------------------------------------------------------------------
-        
-    # ------------------------------------------------------------------------------
-    test_dataset = Subset(test_dataset, list(range(min(50, len(test_dataset)))))
-    # ------------------------------------------------------------------------------
     
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
