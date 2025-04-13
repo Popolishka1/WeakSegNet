@@ -380,14 +380,16 @@ def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2=".
 ##     GENERATE DATASET FUNCTIONS     ##
 ##########################################
 
-def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut", config):
+def generate_pseudo_mask_dataset_with_bbox(train_loader, config):
     total_dice = 0.0
     total_accuracy = 0.0
     total_iou = 0.0
     total_precision = 0.0
     total_recall = 0.0
     n_batches = len(train_loader)
-     
+    output_dir = config["saved_pseudo_masks"]
+    batch_size = config["train_batch_size"]
+    variant = config["variant"]
     os.makedirs(output_dir, exist_ok=True)
     for batch_idx, (image_batch, mask_batch, info_batch) in enumerate(train_loader, start=1):
         print(f"Batch number: {batch_idx}")
