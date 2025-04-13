@@ -152,12 +152,10 @@ def generate_pseudo_mask(bbox, image, variant="GrabCut"):
 def generate_pseudo_masks(bboxs, images, variant="GrabCut"):
     return [generate_pseudo_mask(bbox, inverse_normalize(image).permute(1, 2, 0).cpu().numpy(), variant=variant) for bbox, image in zip(bboxs, images)]
 
-def generate_bbox(cam, image):
-    
+def generate_bbox(cam, image, threshold=0.5):
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
     
     # Create a binary mask by thresholding the CAM
-    threshold = 0.5  # Adjust this threshold as needed (between 0 and 1)
     binary_mask = cam > threshold
     coords = np.column_stack(np.where(binary_mask))
     if coords.size != 0:
@@ -167,8 +165,8 @@ def generate_bbox(cam, image):
     else:
         return None
     
-def generate_bboxs(cams, images):
-    return [generate_bbox(cam, inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for cam, image in zip(cams, images)]
+def generate_bboxs(cams, images, threshold=0.5):
+    return [generate_bbox(cam, inverse_normalize(image).permute(1, 2, 0).cpu().numpy(), threshold) for cam, image in zip(cams, images)]
 
 def generate_cam(image):
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
@@ -390,11 +388,15 @@ def generate_pseudo_mask_dataset_with_bbox(train_loader, config):
     output_dir = config["dataset_output_dir"]
     batch_size = config["train_batch_size"]
     variant = config["variant"]
+    threshold = 0.5
     os.makedirs(output_dir, exist_ok=True)
+    if variant == "GrabCut" and config["grabcut_threshold"]:
+        threshold = config["grabcut_threshold"]
+        
     for batch_idx, (image_batch, mask_batch, info_batch) in enumerate(train_loader, start=1):
         print(f"Batch number: {batch_idx}")
         cams = generate_cams(image_batch)
-        bboxs = generate_bboxs(cams, image_batch)
+        bboxs = generate_bboxs(cams, image_batch, threshold)
         pseudo_masks = generate_pseudo_masks(bboxs, image_batch, variant=variant)
         dice, accuracy_score, iou, precision, recall = evaluate(pseudo_masks, mask_batch, batch_size)
         print(f'Dice score is {dice} || Pixel score is {accuracy_score} || IOU score is {iou} || Precision score is {precision} || Recall score is {recall}')
