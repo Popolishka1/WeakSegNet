@@ -6,7 +6,10 @@ import os
 from src.bbox_utils import generate_pseudo_masks, generate_bboxs, generate_cams, evaluate, visualise_results, save_pseudo_masks
 from src.dataset import load_data_wrapper, PseudoMaskDataset
 from src.utils import load_device, clear_cuda_cache, parse_args
-from src.bbox_utils import show_grabcut_masks
+from src.bbox_utils import generate_pseudo_mask_dataset_with_bbox, load_pseudo_mask
+from src.models import select_segmentation_model
+from src.fit import train_segmentation_model
+from src.metrics import evaluate_model, save_metrics_to_csv
 
 
 ########################
@@ -90,10 +93,6 @@ def main():
     metrics = evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
     clear_cuda_cache()
     save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
-
-    
-
-def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut", config)
 
 if __name__ == "__main__":
     main()
