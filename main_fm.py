@@ -151,6 +151,48 @@ def cam_pseudo_mask_training():
         cam_threshold=cam_threshold,
         device=DEVICE
     )
+
+    ###################################
+    # 4. Generate CAMSAM pseudo masks #
+    ###################################
+    sam2_checkpoint = "sam2.1_hiera_small.pt"
+    model_cfg = "configs/sam2.1/sam2.1_hiera_s.yaml"
+    
+    if not os.path.exists(sam2_checkpoint):
+        print(f"Checkpoint file not found at {sam2_checkpoint}. Downloading...")
+        url = "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt"
+        response = requests.get(url, stream=True)
+        with open(sam2_checkpoint, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+        print("Download completed!")
+
+    sam2_model = build_sam2(model_cfg, sam2_checkpoint, device=DEVICE)
+    predictor = SAM2ImagePredictor(sam2_model)
+    
+    camsam = SAMWrapperWithCAM(
+        predictor=predictor,
+        pseudo_masks=pseudo_masks,
+        num_points=config["num_points"],
+        device=DEVICE
+    )
+    
+    pseudo_masks = []
+    original_dataset = train_loader.dataset
+    print("Generating pseudo masks using SAM:")
+    for idx in range(len(original_dataset)):
+        image, _, info = original_dataset[idx]
+        image = image.to(DEVICE).unsqueeze(0)
+    
+        with torch.no_grad():
+            mask = camsam(image)
+        pseudo_mask = (mask > 0.5).float().squeeze(0)
+        pseudo_masks.append(pseudo_mask)
+    
+        if idx % 10 == 0:
+            print(f"Processed {idx + 1}/{len(original_dataset)} images.")
+    print("Pseudo mask generation complete.\n")
     
     
     ###################################################
@@ -185,11 +227,11 @@ def cam_pseudo_mask_training():
             config=config,
             device=DEVICE
         )
-        torch.save(segmentation_model.state_dict(), config["cam_weakseg_model_save_path"])
+        torch.save(segmentation_model.state_dict(), config["weakseg_model_save_path"])
         clear_cuda_cache()
     else:
         print("\n----Loading segmentation model...")
-        state_dict = torch.load(config["cam_weakseg_model_save_path"], map_location=DEVICE, weights_only=True)
+        state_dict = torch.load(config["weakseg_model_save_path"], map_location=DEVICE, weights_only=True)
         segmentation_model.load_state_dict(state_dict)
         segmentation_model.to(DEVICE)
         print("[Segmentation model loaded]")
@@ -208,7 +250,7 @@ def cam_pseudo_mask_training():
     for k, v in metrics.items():
         print(f"{k}: {v:.4f}")
         
-    save_metrics_to_csv(metrics, save_path=config["cam_segmentation_metrics_save_path"])
+    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
     
     clear_cuda_cache()
     
