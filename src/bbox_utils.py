@@ -377,12 +377,13 @@ def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2=".
 
 
 ##########################################
-##     SHOW GRABCUT MASKS FUNCTIONS     ##
+##     GENERATE DATASET FUNCTIONS     ##
 ##########################################
 
-def show_grabcut_masks():
+def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut"):
+    
     config = parse_args(expriment_name="BBOX")
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config)    
+     = load_data_wrapper(config=config)    
 
     total_dice = 0.0
     total_accuracy = 0.0
@@ -390,15 +391,13 @@ def show_grabcut_masks():
     total_precision = 0.0
     total_recall = 0.0
     n_batches = len(train_loader)
-    batch_size = 64
-    print(n_batches)
-    output_dir = "saved_pseudo_masks"
+     
     os.makedirs(output_dir, exist_ok=True)
     for batch_idx, (image_batch, mask_batch, info_batch) in enumerate(train_loader, start=1):
         print(f"Batch number: {batch_idx}")
         cams = generate_cams(image_batch)
         bboxs = generate_bboxs(cams, image_batch)
-        pseudo_masks = generate_pseudo_masks(bboxs, image_batch, variant="GrabCut")
+        pseudo_masks = generate_pseudo_masks(bboxs, image_batch, variant=variant)
         dice, accuracy_score, iou, precision, recall = evaluate(pseudo_masks, mask_batch, batch_size)
         print(f'Dice score is {dice} || Pixel score is {accuracy_score} || IOU score is {iou} || Precision score is {precision} || Recall score is {recall}')
         total_dice += dice
@@ -406,7 +405,7 @@ def show_grabcut_masks():
         total_iou += iou
         total_precision += precision
         total_recall += recall
-        visualise_results(image_batch[0], bboxs[0], mask_batch[0], pseudo_masks[0], variant="GrabCut")
+        visualise_results(image_batch[0], bboxs[0], mask_batch[0], pseudo_masks[0], variant=variant)
         save_pseudo_masks(pseudo_masks, batch_idx, output_dir)
 
     print(f'Average dice score per image is {total_dice / n_batches}')
