@@ -6,7 +6,6 @@ from torchvision import transforms
 import xml.etree.ElementTree as et
 from torch.utils.data import Dataset, DataLoader, random_split, Subset
 
-
 class OxfordPet(Dataset):
     def __init__(self,
                  data_dir,

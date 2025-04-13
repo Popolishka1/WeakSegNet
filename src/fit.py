@@ -17,7 +17,7 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
         n_batches_train = len(train_loader)
         train_loss = 0.0
 
-        for images, target_masks, _ in train_loader:
+        for images, target_masks in train_loader:
             images = images.to(device)
             target_masks = target_masks.to(device)
 

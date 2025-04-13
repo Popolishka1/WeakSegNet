@@ -7,54 +7,173 @@ import torchvision.transforms as transforms
 from PIL import Image, ImageDraw, ImageFont
 from dataset import inverse_normalize, data_loading, load_data_wrapper, PseudoMaskDataset
 import os
+from src.utils import parse_args
+
+##########################################
+##         EVALUATION FUNCTIONS         ##
+##########################################
+
+def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
+    if not isinstance(output, torch.Tensor):
+        output = torch.from_numpy(output)
+    if not isinstance(gt_mask, torch.Tensor):
+        gt_mask = torch.from_numpy(gt_mask)
+
+    if output.ndim == 2:
+        output = output.unsqueeze(0).unsqueeze(0)
+    if gt_mask.ndim == 2:
+        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    intersection = (predicted_mask * gt_mask).sum()
+    union = predicted_mask.sum() + gt_mask.sum()
+    dice = (2 * intersection + eps) / (union + eps)
+    return dice.item()
+
+def iou_score(output, gt_mask, threshold=0.5, eps=1e-7):
+    if not isinstance(output, torch.Tensor):
+        output = torch.from_numpy(output)
+    if not isinstance(gt_mask, torch.Tensor):
+        gt_mask = torch.from_numpy(gt_mask)
+
+    if output.ndim == 2:
+        output = output.unsqueeze(0).unsqueeze(0)
+    if gt_mask.ndim == 2:
+        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    intersection = (predicted_mask * gt_mask).sum()
+    union = predicted_mask.sum() + gt_mask.sum() - intersection
+
+    iou = (intersection + eps) / (union + eps)
+    return iou.item()
+
+def pixel_accuracy(output, gt_mask, threshold=0.5):
+    if not isinstance(output, torch.Tensor):
+        output = torch.from_numpy(output)
+    if not isinstance(gt_mask, torch.Tensor):
+        gt_mask = torch.from_numpy(gt_mask)
+    if output.ndim == 2:
+        output = output.unsqueeze(0).unsqueeze(0)
+    if gt_mask.ndim == 2:
+        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    correct = (predicted_mask == gt_mask).float()
+
+    total = torch.numel(gt_mask)
+    accuracy = correct.sum() / total
+    return accuracy.item()
 
 
-def bboxs_to_pseudo_mask(bounding_box, image):
+def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
+    if not isinstance(output, torch.Tensor):
+        output = torch.from_numpy(output)
+    if not isinstance(gt_mask, torch.Tensor):
+        gt_mask = torch.from_numpy(gt_mask)
+    if output.ndim == 2:
+        output = output.unsqueeze(0).unsqueeze(0)
+    if gt_mask.ndim == 2:
+        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
+    predicted_mask = (output > threshold).float()
+    gt_mask = gt_mask.float()
+
+    tp = (predicted_mask * gt_mask).sum()
+    predicted_positive = predicted_mask.sum()
+    actual_positive = gt_mask.sum()
+
+    precision = (tp + eps) / (predicted_positive + eps)
+    recall = (tp + eps) / (actual_positive + eps)
+
+    return precision.item(), recall.item()
+
+def eval_pseudo_masks_dice(pseudo_masks, masks):
+    return sum([dice_score(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
+
+def eval_pseudo_masks_pixel_accuracy(pseudo_masks, masks):
+    return sum([pixel_accuracy(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
+
+def eval_pseudo_masks_iou(pseudo_masks, masks):
+    return sum([iou_score(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
+
+def eval_pseudo_masks_precision_recall(pseudo_masks, masks):
+    precisions_recalls = [precision_recall(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)]
+    precisions = [precision_recall[0] for precision_recall in precisions_recalls]
+    recalls = [precision_recall[1] for precision_recall in precisions_recalls]
+    return sum(precisions), sum(recalls)
+
+def evaluate(pseudo_masks, mask_batch, batch_size):
+    dice = eval_pseudo_masks_dice(pseudo_masks, mask_batch) / batch_size
+    accuracy_score = eval_pseudo_masks_pixel_accuracy(pseudo_masks, mask_batch) / batch_size
+    iou = eval_pseudo_masks_iou(pseudo_masks, mask_batch) / batch_size
+    precision, recall = eval_pseudo_masks_precision_recall(pseudo_masks, mask_batch) 
+    return dice, accuracy_score, iou, precision / batch_size, recall / batch_size
+
+##########################################
+##      GENERATING MASKS FUNCTIONS      ##
+##########################################
+def generate_pseudo_mask(bbox, image, variant="GrabCut"):
+    x_min, y_min, x_max, y_max = bbox
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
-    grabcut_mask = np.zeros(image_uint8.shape[:2], np.uint8)
-
-    # Initialise background and foreground models (required by GrabCut)
-    bgdModel = np.zeros((1, 65), np.float64)
-    fgdModel = np.zeros((1, 65), np.float64)
-
-    # Apply GrabCut with the bounding box initialization
-    cv2.grabCut(image_uint8, grabcut_mask, bounding_box, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
-
-    # Convert GrabCut output to binary mask: 0 and 2 are background, 1 and 3 are foreground
-    mask2 = np.where((grabcut_mask == 2) | (grabcut_mask == 0), 0, 1).astype('uint8')
-
-    result = image_uint8 * mask2[:, :, np.newaxis]
-
-    pseudo_mask = (mask2 * 255).astype(np.uint8)
-
+    
+    if variant == "GrabCut":
+        grabcut_mask = np.zeros(image_uint8.shape[:2], np.uint8)
+        bgdModel = np.zeros((1, 65), np.float64)
+        fgdModel = np.zeros((1, 65), np.float64)
+        cv2.grabCut(image_uint8, grabcut_mask, (x_min, y_min, x_max - x_min, y_max - y_min), bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
+        mask2 = np.where((grabcut_mask == 2) | (grabcut_mask == 0), 0, 1).astype('uint8')
+        pseudo_mask = (mask2 * 255).astype(np.uint8)
+    
+    elif variant == "Super-Pixel":
+        image_cv = cv2.cvtColor(image_uint8, cv2.COLOR_RGB2BGR)
+        image_cv = cv2.GaussianBlur(image_cv, (5, 5), sigmaX=1, sigmaY=1)
+        h, w = image_cv.shape[:2]
+        region_size = int(np.sqrt((h * w) / 200))
+        slic = cv2.ximgproc.createSuperpixelSLIC(image_cv, cv2.ximgproc.SLIC, region_size=region_size, ruler=10)
+        slic.iterate(10)
+        segments = slic.getLabels()
+        pseudo_mask = np.zeros_like(segments, dtype=np.uint8)
+        for label in np.unique(segments):
+            sp_mask = (segments == label)
+            coords = np.column_stack(np.where(sp_mask))
+            if len(coords) == 0:
+                continue
+            y_center, x_center = coords.mean(axis=0)
+            if (x_center >= x_min and x_center <= x_max and y_center >= y_min and y_center <= y_max):
+                pseudo_mask[sp_mask] = 1
+        pseudo_mask = (pseudo_mask * 255).astype(np.uint8)
+    
     return pseudo_mask
 
-def bboxs_to_pseudo_masks(bboxs, images):
-    return [generate_pseudo_mask(bbox, inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for bbox, image in zip(bboxs, images)]
+def generate_pseudo_masks(bboxs, images, variant="GrabCut"):
+    return [generate_pseudo_mask(bbox, inverse_normalize(image).permute(1, 2, 0).cpu().numpy(), variant=variant) for bbox, image in zip(bboxs, images)]
 
-def cam_to_bbox(cam, image):
+def generate_bbox(cam, image):
+    
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
+    
     # Create a binary mask by thresholding the CAM
     threshold = 0.5  # Adjust this threshold as needed (between 0 and 1)
     binary_mask = cam > threshold
-
-    # Compute bounding box from the binary mask using numpy
     coords = np.column_stack(np.where(binary_mask))
     if coords.size != 0:
         y_min, x_min = coords.min(axis=0)
         y_max, x_max = coords.max(axis=0)
-        bounding_box = (x_min, y_min, x_max, y_max)  # (left, top, right, bottom)
+        return (x_min, y_min, x_max, y_max)  
     else:
-        bounding_box = None
-    return bounding_box
+        return None
+    
 
-def cams_to_bboxs(cams, images):
+def generate_bboxs(cams, images):
     return [generate_bbox(cam, inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for cam, image in zip(cams, images)]
 
 def generate_cam(image):
     image_uint8 = (image * 255).clip(0, 255).astype(np.uint8)
 
-    # Load a pre-trained model (ResNet50 in this example) and set to eval mode.
+    # Load a pre-trained model
     model = models.resnet50(pretrained=True)
     model.eval()
 
@@ -122,28 +241,27 @@ def generate_cam(image):
 def generate_cams(images):
     return [generate_cam(inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for image in images]
 
+##########################################
+##  VISUALISE AND SAVE MASKS FUNCTIONS  ##
+##########################################
+
 def visualise_results(image, bbox, mask, pseudo_mask, variant="GrabCut"):
-    # Convert tensors to numpy arrays
     image_np = inverse_normalize(image).permute(1, 2, 0).cpu().numpy()
     mask_np = mask.squeeze().cpu().numpy()
     pseudo_mask_np = pseudo_mask.squeeze().cpu().numpy() if isinstance(pseudo_mask, torch.Tensor) else pseudo_mask
 
-    # Convert numpy arrays to PIL Images
     img_pil = Image.fromarray((image_np * 255).clip(0, 255).astype(np.uint8))
     mask_pil = Image.fromarray((mask_np * 255).clip(0, 255).astype(np.uint8))
     pseudo_mask_pil = Image.fromarray((pseudo_mask_np * 255).clip(0, 255).astype(np.uint8))
 
-    # Create drawing context for bounding box
     draw = ImageDraw.Draw(img_pil)
     x_min, y_min, x_max, y_max = bbox
     draw.rectangle([x_min, y_min, x_max, y_max], outline="red", width=2)
 
-    # Create composite image
     total_width = img_pil.width * 3
     max_height = max(img_pil.height, mask_pil.height, pseudo_mask_pil.height)
     composite = Image.new("RGB", (total_width, max_height + 30), "white")  # +30 for text
     
-    # Paste images with labels
     fonts_folder = os.path.join(os.environ["WINDIR"], "Fonts") if os.name == 'nt' else "/usr/share/fonts"
     try:
         font = ImageFont.truetype(os.path.join(fonts_folder, "arial.ttf"), 14)
@@ -170,133 +288,66 @@ def visualise_results(image, bbox, mask, pseudo_mask, variant="GrabCut"):
 
 def save_pseudo_masks(pseudo_masks, batch_idx, output_dir):
     for idx, pseudo_mask in enumerate(pseudo_masks):
-        # Convert a torch tensor to a NumPy array if needed
         if isinstance(pseudo_mask, torch.Tensor):
             pseudo_mask_np = pseudo_mask.cpu().numpy()
         else:
             pseudo_mask_np = pseudo_mask
 
-        # Squeeze dimensions if necessary (for example, from shape [1, H, W] to [H, W])
         pseudo_mask_np = np.squeeze(pseudo_mask_np)
         
-        # If the mask values are floats in [0, 1], convert them to 0-255 and to unsigned 8-bit integers
         if pseudo_mask_np.max() <= 1.0:
             pseudo_mask_np = (pseudo_mask_np * 255).astype(np.uint8)
         else:
             pseudo_mask_np = pseudo_mask_np.astype(np.uint8)
         
-        # Construct a filename with the .png extension
         file_name = os.path.join(output_dir, f"pseudo_mask_batch{batch_idx}_idx{idx}.png")
-        # Save the image using Pillow in PNG format
         Image.fromarray(pseudo_mask_np).save(file_name)
     print(f'Images saved to file')
 
 
-
-def dice_score(output, gt_mask, threshold=0.5, eps=1e-7):
-    """
-    One of the possible metric that we can use: dice score between predicted masks and ground truth.
-    """
-    if not isinstance(output, torch.Tensor):
-        output = torch.from_numpy(output)
-    if not isinstance(gt_mask, torch.Tensor):
-        gt_mask = torch.from_numpy(gt_mask)
-
-    # If the tensors are 2D (e.g., H x W), unsqueeze to add batch and channel dimensions.
-    if output.ndim == 2:
-        output = output.unsqueeze(0).unsqueeze(0)
-    if gt_mask.ndim == 2:
-        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
-    predicted_mask = (output > threshold).float()
-    gt_mask = gt_mask.float()
-
-    intersection = (predicted_mask * gt_mask).sum()
-    union = predicted_mask.sum() + gt_mask.sum()
-    dice = (2 * intersection + eps) / (union + eps)
-    return dice.item()
-
-def iou_score(output, gt_mask, threshold=0.5, eps=1e-7):
-    if not isinstance(output, torch.Tensor):
-        output = torch.from_numpy(output)
-    if not isinstance(gt_mask, torch.Tensor):
-        gt_mask = torch.from_numpy(gt_mask)
-
-    # If the tensors are 2D (e.g., H x W), unsqueeze to add batch and channel dimensions.
-    if output.ndim == 2:
-        output = output.unsqueeze(0).unsqueeze(0)
-    if gt_mask.ndim == 2:
-        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
-    predicted_mask = (output > threshold).float()
-    gt_mask = gt_mask.float()
-
-    intersection = (predicted_mask * gt_mask).sum()
-    union = predicted_mask.sum() + gt_mask.sum() - intersection
-
-    iou = (intersection + eps) / (union + eps)
-    return iou.item()
-
-def pixel_accuracy(output, gt_mask, threshold=0.5):
-    if not isinstance(output, torch.Tensor):
-        output = torch.from_numpy(output)
-    if not isinstance(gt_mask, torch.Tensor):
-        gt_mask = torch.from_numpy(gt_mask)
-
-    # If the tensors are 2D (e.g., H x W), unsqueeze to add batch and channel dimensions.
-    if output.ndim == 2:
-        output = output.unsqueeze(0).unsqueeze(0)
-    if gt_mask.ndim == 2:
-        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
-    predicted_mask = (output > threshold).float()
-    gt_mask = gt_mask.float()
-
-    correct = (predicted_mask == gt_mask).float()
-
-    total = torch.numel(gt_mask)
-    accuracy = correct.sum() / total
-    return accuracy.item()
+##########################################
+##       TRAINING MODEL FUNCTIONS       ##
+##########################################
 
 
-def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
-    if not isinstance(output, torch.Tensor):
-        output = torch.from_numpy(output)
-    if not isinstance(gt_mask, torch.Tensor):
-        gt_mask = torch.from_numpy(gt_mask)
 
-    # If the tensors are 2D (e.g., H x W), unsqueeze to add batch and channel dimensions.
-    if output.ndim == 2:
-        output = output.unsqueeze(0).unsqueeze(0)
-    if gt_mask.ndim == 2:
-        gt_mask = gt_mask.unsqueeze(0).unsqueeze(0)
-    predicted_mask = (output > threshold).float()
-    gt_mask = gt_mask.float()
 
-    tp = (predicted_mask * gt_mask).sum()
-    predicted_positive = predicted_mask.sum()
-    actual_positive = gt_mask.sum()
 
-    precision = (tp + eps) / (predicted_positive + eps)
-    recall = (tp + eps) / (actual_positive + eps)
+##########################################
+##     SHOW GRABCUT MASKS FUNCTIONS     ##
+##########################################
 
-    return precision.item(), recall.item()
+def show_grabcut_masks():
+    config = parse_args(expriment_name="BBOX")
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config)    
 
-def eval_pseudo_masks_dice(pseudo_masks, masks):
-    return sum([dice_score(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
+    total_dice = 0.0
+    total_accuracy = 0.0
+    total_iou = 0.0
+    total_precision = 0.0
+    total_recall = 0.0
+    n_batches = len(train_loader)
+    batch_size = 64
+    print(n_batches)
+    output_dir = "saved_pseudo_masks"
+    os.makedirs(output_dir, exist_ok=True)
+    for batch_idx, (image_batch, mask_batch, info_batch) in enumerate(train_loader, start=1):
+        print(f"Batch number: {batch_idx}")
+        cams = generate_cams(image_batch)
+        bboxs = generate_bboxs(cams, image_batch)
+        pseudo_masks = generate_pseudo_masks(bboxs, image_batch, variant="GrabCut")
+        dice, accuracy_score, iou, precision, recall = evaluate(pseudo_masks, mask_batch, batch_size)
+        print(f'Dice score is {dice} || Pixel score is {accuracy_score} || IOU score is {iou} || Precision score is {precision} || Recall score is {recall}')
+        total_dice += dice
+        total_accuracy += accuracy_score
+        total_iou += iou
+        total_precision += precision
+        total_recall += recall
+        visualise_results(image_batch[0], bboxs[0], mask_batch[0], pseudo_masks[0], variant="GrabCut")
+        save_pseudo_masks(pseudo_masks, batch_idx, output_dir)
 
-def eval_pseudo_masks_pixel_accuracy(pseudo_masks, masks):
-    return sum([pixel_accuracy(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
-
-def eval_pseudo_masks_iou(pseudo_masks, masks):
-    return sum([iou_score(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)])
-
-def eval_pseudo_masks_precision_recall(pseudo_masks, masks):
-    precisions_recalls = [precision_recall(pseudo_mask, true_mask.squeeze()) for pseudo_mask, true_mask in zip(pseudo_masks, masks)]
-    precisions = [precision_recall[0] for precision_recall in precisions_recalls]
-    recalls = [precision_recall[1] for precision_recall in precisions_recalls]
-    return sum(precisions), sum(recalls)
-
-def evaluate(pseudo_masks, mask_batch, batch_size):
-    dice = eval_pseudo_masks_dice(pseudo_masks, mask_batch) / batch_size
-    accuracy_score = eval_pseudo_masks_pixel_accuracy(pseudo_masks, mask_batch) / batch_size
-    iou = eval_pseudo_masks_iou(pseudo_masks, mask_batch) / batch_size
-    precision, recall = eval_pseudo_masks_precision_recall(pseudo_masks, mask_batch) 
-    return dice, accuracy_score, iou, precision / batch_size, recall / batch_size
+    print(f'Average dice score per image is {total_dice / n_batches}')
+    print(f'Average accuracy score per image is {total_accuracy / n_batches}')
+    print(f'Average IOU score per image is {total_iou / n_batches}')
+    print(f'Average precision score per image is {total_precision / n_batches}')
+    print(f'Average recall score per image is {total_recall / n_batches}')
