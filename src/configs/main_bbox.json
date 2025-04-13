@@ -8,21 +8,12 @@
 
   "image_size": 256,
 
-  "classifier": "ResNet50",
-  "target_id": "class_id",
-  "n_classes": 37,
-  "classifier_save_path": "src/models/classifier_ResNet50.pth",
-
-  "train_classifier": false,
-  "n_epochs_cls": 5,
-  "learning_rate_cls": 0.001,
-
-  "cam_model" : "CAM",
-  "cam_threshold": 0.5,
-  "cam_visualisation_save_path": "results/cam/cam_examples.png",
-
   "segmentation_model": "DeepLabV3",
   "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3.pth",
+
+  "variant": "GrabCut",
+  "dataset_output_dir": "grabcut",
+  "grabcut_threshold": 0.5,
 
   "train_segmentation": true,
   "n_epochs_seg": 5,
