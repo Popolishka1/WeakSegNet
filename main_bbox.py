@@ -2,8 +2,6 @@ import torch
 from torch.utils.data import DataLoader
 import os
 
-
-from src.bbox_utils import generate_pseudo_masks, generate_bboxs, generate_cams, evaluate, visualise_results, save_pseudo_masks
 from src.dataset import load_data_wrapper, PseudoMaskDataset
 from src.utils import load_device, clear_cuda_cache, parse_args
 from src.bbox_utils import generate_pseudo_mask_dataset_with_bbox, load_pseudo_mask
@@ -46,10 +44,8 @@ def main():
     
     if config["dataset_output_dir"]:
         generate_pseudo_mask_dataset_with_bbox(train_loader, config=config)
-    elif config["dataset_dir"]:
-        pseudo_masks = load_pseudo_mask(config["dataset_dir"]):
     else:
-        
+        pseudo_masks = load_pseudo_mask(config["dataset_dir"])  
 
     ####################################
     # 3. Initialise segmentation model #
@@ -58,6 +54,7 @@ def main():
     if segmentation_model is None:
             pass
     segmentation_model.to(DEVICE)
+    
 
     ###############################################################
     # 4. Train segmentation model using the Bounding Boxes Dataset#
