@@ -380,11 +380,7 @@ def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2=".
 ##     GENERATE DATASET FUNCTIONS     ##
 ##########################################
 
-def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut"):
-    
-    config = parse_args(expriment_name="BBOX")
-     = load_data_wrapper(config=config)    
-
+def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut", config):
     total_dice = 0.0
     total_accuracy = 0.0
     total_iou = 0.0
