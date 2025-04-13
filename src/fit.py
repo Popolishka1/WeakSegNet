@@ -5,7 +5,7 @@ import torch.nn as nn
 def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda"):
     print(f"--Fitting segmentation model with {n_epochs} epochs")
 
-    criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss()
     
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3) # lr dynamic adjustment 
