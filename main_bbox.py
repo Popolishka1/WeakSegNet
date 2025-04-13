@@ -24,7 +24,76 @@ from src.bbox_utils import show_grabcut_masks
 # Look at functions in bbox_utils. mix_pseudo_masks_exp?
 #######################
 def main():
-    return None
+
+    config = parse_args(expriment_name="CAM")
+    
+    # Set device and clear CUDA cache
+    DEVICE = load_device()
+    clear_cuda_cache()
+
+    ##################################################
+    # 1. Load dataset (train, val, and test loaders) #
+    ##################################################
+
+    train_loader, val_loader, test_loader = load_data_wrapper(config=config)
+
+    ############################################
+    # 2. Load or generate pseudo-masks dataset #
+    ############################################
+    
+    if config["dataset_output_dir"]:
+        generate_pseudo_mask_dataset_with_bbox(train_loader, config=config)
+    elif config["dataset_dir"]:
+        pseudo_masks = load_pseudo_mask(config["dataset_dir"]):
+    else:
+        
+
+    ####################################
+    # 3. Initialise segmentation model #
+    ####################################
+    segmentation_model = select_segmentation_model(config["segmentation_model"])
+    if segmentation_model is None:
+            pass
+    segmentation_model.to(DEVICE)
+
+    ###############################################################
+    # 4. Train segmentation model using the Bounding Boxes Dataset#
+    ###############################################################
+
+    train_dataset_pseudo = PseudoMaskDataset(original_dataset=train_loader.dataset,
+                                                 pseudo_masks=pseudo_masks
+                                                 )
+    train_loader_pseudo = DataLoader(train_dataset_pseudo, batch_size=config["train_batch_size"], shuffle=True, num_workers=0)
+    
+    # 4.2 Train or load baseline segmentation model
+    if config["train_segmentation"]:
+        print("\n----Training segmentation model...")
+        segmentation_model = train_segmentation_model(model=segmentation_model,
+                                                        train_loader=train_loader_pseudo,
+                                                        val_loader=val_loader,
+                                                        config=config,
+                                                        device=DEVICE
+                                                        )
+        torch.save(segmentation_model.state_dict(), config["weakseg_model_save_path"])
+        clear_cuda_cache()
+    else:
+        print("\n----Loading segmentation model...")
+        state_dict = torch.load(config["weakseg_model_save_path"], map_location=DEVICE, weights_only=True)
+        segmentation_model.load_state_dict(state_dict)
+        segmentation_model.to(DEVICE)
+        print("[Segmentation model loaded]")
+    
+    #####################################
+    # 5. Evaluate and visualize results #
+    #####################################
+    # 5.1 Evaluate segmentation model
+    metrics = evaluate_model(model=segmentation_model, test_loader=test_loader, threshold=0.5, device=DEVICE)
+    clear_cuda_cache()
+    save_metrics_to_csv(metrics, save_path=config["segmentation_metrics_save_path"])
+
+    
+
+def generate_pseudo_mask_dataset_with_bbox(output_dir="saved_pseudo_masks", batch_size=64, train_loader, variant="GrabCut", config)
 
 if __name__ == "__main__":
     main()
