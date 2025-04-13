@@ -1,11 +1,12 @@
 import torch
+import re
 import cv2
 import numpy as np
 import torch.nn.functional as F
 import torchvision.models as models
 import torchvision.transforms as transforms
 from PIL import Image, ImageDraw, ImageFont
-from dataset import inverse_normalize, data_loading, load_data_wrapper, PseudoMaskDataset
+from src.dataset import inverse_normalize, data_loading, load_data_wrapper, PseudoMaskDataset
 import os
 from src.utils import parse_args
 
@@ -166,7 +167,6 @@ def generate_bbox(cam, image):
     else:
         return None
     
-
 def generate_bboxs(cams, images):
     return [generate_bbox(cam, inverse_normalize(image).permute(1, 2, 0).cpu().numpy()) for cam, image in zip(cams, images)]
 
@@ -309,8 +309,74 @@ def save_pseudo_masks(pseudo_masks, batch_idx, output_dir):
 ##       TRAINING MODEL FUNCTIONS       ##
 ##########################################
 
+def natural_keys(text):
+    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', text)]
 
+def load_pseudo_mask(data_dir):
+    pseudo_masks = []
+    files = sorted(os.listdir(data_dir), key=natural_keys)
+    for file in files:
+        file_path = os.path.join(data_dir, file)
+        print("Loading:", file)
+        im_frame = np.array(Image.open(file_path))
+        
+        if im_frame.ndim == 2:
+            im_frame = np.expand_dims(im_frame, axis=0)
+            
+        im_frame = im_frame.astype(np.float32)
+        
+        if im_frame.max() > 1.0:
+            im_frame = im_frame / 255.0
+        
+        mask_tensor = torch.tensor(im_frame, dtype=torch.float32)
+        pseudo_masks.append(mask_tensor)
+    return pseudo_masks
 
+def mix_pseudo_masks_exp():
+    # Define the directories for your two sets of masks
+    data_dir1 = "./grab_cut_thres_0.3_grad_cam"
+    data_dir2 = "./super_pixel/"
+
+    # Load the pseudo masks from each directory
+    pseudo_masks1 = load_pseudo_mask(data_dir1)
+    pseudo_masks2 = load_pseudo_mask(data_dir2)
+
+    # Ensure that both folders have the same number of masks
+    if len(pseudo_masks1) != len(pseudo_masks2):
+        raise ValueError("Folders contain a different number of masks; please check alignment.")
+
+    # Define a threshold for binarisation (adjust as needed)
+    threshold = 0.5
+
+    combined_masks = []
+    for mask1, mask2 in zip(pseudo_masks1, pseudo_masks2):
+        # Binarise each mask based on the threshold
+        binary_mask1 = mask1 > threshold
+        binary_mask2 = mask2 > threshold
+        
+        # Compute the element-wise logical AND to keep only the overlapping (common) regions
+        overlapping_region = torch.logical_and(binary_mask1, binary_mask2)
+        
+        # Optionally, convert back to float format if needed (0.0 for background, 1.0 for overlapping region)
+        combined_mask = overlapping_region.float()
+        
+        combined_masks.append(combined_mask)
+
+    batch_size = 64
+    batched_combined_masks = []
+
+    # Loop over combined_masks in steps of batch_size
+    for i in range(0, len(combined_masks), batch_size):
+        # Take a slice of combined_masks of length up to batch_size
+        batch = combined_masks[i : i + batch_size]
+        
+        # Optionally, you can stack the batch of masks into a tensor.
+        # This assumes that each mask has the same shape.
+        batch_tensor = torch.stack(batch, dim=0)
+        
+        batched_combined_masks.append(batch_tensor)
+
+    # Now batched_combined_masks is a list, where each element is a tensor of shape (batch_size, ...)
 
 
 ##########################################
