@@ -387,7 +387,7 @@ def generate_pseudo_mask_dataset_with_bbox(train_loader, config):
     total_precision = 0.0
     total_recall = 0.0
     n_batches = len(train_loader)
-    output_dir = config["saved_pseudo_masks"]
+    output_dir = config["dataset_output_dir"]
     batch_size = config["train_batch_size"]
     variant = config["variant"]
     os.makedirs(output_dir, exist_ok=True)
