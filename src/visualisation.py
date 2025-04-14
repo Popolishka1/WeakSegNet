@@ -106,13 +106,19 @@ def visualise_cams(config, dataloader, classifier, cam_type='CAM', cam_threshold
         img = inverse_normalize(img_tensor).cpu().permute(1, 2, 0).numpy()
         img = np.clip(img, 0, 1)
         
-        heatmap = cv2.applyColorMap(np.uint8(255 * cam.cpu().numpy()), cv2.COLORMAP_JET)
+        heatmap = cv2.applyColorMap(np.uint8(255 * cam.cpu().detach().numpy()), cv2.COLORMAP_JET)
         overlayed_img = cv2.addWeighted(np.uint8(255 * img), 0.5, heatmap, 0.5, 0)
         pseudo_mask = cam_to_binary_mask(cam, cam_threshold).squeeze().cpu().numpy()
         
         orig_img = Image.fromarray((img * 255).astype(np.uint8))
         cam_img = Image.fromarray(overlayed_img)
         mask_img = Image.fromarray((pseudo_mask * 255).astype(np.uint8))
+
+            
+        try:
+          font = ImageFont.truetype("arial.ttf", 14)
+        except:
+          font = ImageFont.load_default()
         
         y_offset = row * (256 + 50)
         for col, (image, title) in enumerate(zip(
