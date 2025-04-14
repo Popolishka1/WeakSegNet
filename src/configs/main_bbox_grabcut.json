@@ -16,7 +16,7 @@
   "grabcut_threshold": 0.5,
 
   "train_segmentation": true,
-  "n_epochs_seg": 5,
+  "n_epochs_seg": 20,
   "learning_rate_seg": 0.0001,
 
   "segmentation_metrics_save_path": "results/cam/segmentation_metrics.csv",
