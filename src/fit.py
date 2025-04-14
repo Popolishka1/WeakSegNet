@@ -29,7 +29,7 @@ def fit_segmentation(model, n_epochs, lr, train_loader, val_loader, device="cuda
             optimizer.step()
 
             train_loss += loss.item() 
-        avg_train_loss = train_loss / n_batches_train # TODO all: might be a good idea to include early stop (with dice/pix acc or val loss)
+        avg_train_loss = train_loss / n_batches_train
 
         # ------- VALIDATION -------
         model.eval()
@@ -93,7 +93,7 @@ def fit_classification(classifier, target_id, n_epochs, lr, train_loader, val_lo
             optimizer.step()
 
             train_loss += loss.item() 
-        avg_train_loss = train_loss / n_batches_train # TODO all: same, might be a good idea to include early stop (with acc or val loss)
+        avg_train_loss = train_loss / n_batches_train
 
         # ------- VALIDATION -------
         classifier.eval()
