@@ -57,7 +57,7 @@ Using the comp0197-cw1-pt conda environment, install the following two package:
 pip install opencv-python
 ```
 ```sh
-pip install git+https://github.com/facebookresearch/sam2.git
+pip install sam2
 ```
 
 ### 2. Baselines (fully supervised use case)
