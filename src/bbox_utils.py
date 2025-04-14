@@ -175,7 +175,7 @@ def generate_cam(image):
     model = models.resnet50(pretrained=True)
     model.eval()
 
-    # Choose the target convolutional layer (typically the last conv layer)
+    # Choose the target convolutional layer
     target_layer = model.layer4[-1]
 
     # Global variables to store activations and gradients
@@ -216,7 +216,6 @@ def generate_cam(image):
     model.zero_grad()
     output[0, pred_class].backward()
     # Compute Grad-CAM
-    # Global average pooling over gradients for each channel
     weights = torch.mean(gradients, dim=(2, 3))  # Shape: [batch, channels]
 
     # Combine the activations using these weights
@@ -331,28 +330,21 @@ def load_pseudo_mask(data_dir):
     return pseudo_masks
 
 def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2="./super_pixel/"):
-    # Define the directories for your two sets of masks
-    # Load the pseudo masks from each directory
     pseudo_masks1 = load_pseudo_mask(data_dir1)
     pseudo_masks2 = load_pseudo_mask(data_dir2)
 
-    # Ensure that both folders have the same number of masks
     if len(pseudo_masks1) != len(pseudo_masks2):
         raise ValueError("Folders contain a different number of masks; please check alignment.")
 
-    # Define a threshold for binarisation (adjust as needed)
     threshold = 0.5
 
     combined_masks = []
     for mask1, mask2 in zip(pseudo_masks1, pseudo_masks2):
-        # Binarise each mask based on the threshold
         binary_mask1 = mask1 > threshold
         binary_mask2 = mask2 > threshold
         
-        # Compute the element-wise logical AND to keep only the overlapping (common) regions
         overlapping_region = torch.logical_and(binary_mask1, binary_mask2)
         
-        # Optionally, convert back to float format if needed (0.0 for background, 1.0 for overlapping region)
         combined_mask = overlapping_region.float()
         
         combined_masks.append(combined_mask)
@@ -360,18 +352,12 @@ def mix_pseudo_masks_exp(data_dir1="./grab_cut_thres_0.3_grad_cam", data_dir2=".
     batch_size = 64
     batched_combined_masks = []
 
-    # Loop over combined_masks in steps of batch_size
     for i in range(0, len(combined_masks), batch_size):
-        # Take a slice of combined_masks of length up to batch_size
         batch = combined_masks[i : i + batch_size]
-        
-        # Optionally, you can stack the batch of masks into a tensor.
-        # This assumes that each mask has the same shape.
         batch_tensor = torch.stack(batch, dim=0)
         
         batched_combined_masks.append(batch_tensor)
     return batched_combined_masks
-    # Now batched_combined_masks is a list, where each element is a tensor of shape (batch_size, ...)
 
 
 ##########################################
