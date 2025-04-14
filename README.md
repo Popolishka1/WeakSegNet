@@ -56,7 +56,6 @@ Create a conda env and install dependencies:
 ```sh
 conda create --name weakseg python=3.9 -y && \
 conda activate weakseg && \
-conda install -y numpy matplotlib && \
 conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia && \
 conda install -y -c conda-forge opencv
 ```
