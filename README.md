@@ -65,6 +65,12 @@ Run the baseline script with the desired config (stored in a .json file in ```sr
 ```sh
 python python baseline.py --config ./src/config/baseline.json
 ```
+CAM method selection experiments:
+```sh
+python main_cam.py --config ./src/configs/main_cam_05_cam.json
+python main_cam.py --config ./src/configs/main_cam_05_gradcam.json
+python main_cam.py --config ./src/configs/main_cam_05_gradcampp.json
+```
 
 ### 3. Weak supervision segmentation : Class Activation Map
 Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
