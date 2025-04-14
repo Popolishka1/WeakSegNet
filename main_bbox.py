@@ -10,20 +10,6 @@ from src.fit import train_segmentation_model
 from src.metrics import evaluate_model, save_metrics_to_csv
 
 
-########################
-# Experiments to include: 
-# - Sans le grab cut, juste bounding boxes (celui qui performe moins bien)
-# - Weak segmentation avec bounding boxes (le basique)
-# - mix grabcut et super pixel (le meilleur)
-# - data augmentation? 
-
-
-# Expeirment 1: 
-#data_dir = "./dummy_masks_thres_0.4/"
-
-# Expeirment 2: 
-# Look at functions in bbox_utils. mix_pseudo_masks_exp?
-#######################
 def main():
 
     config = parse_args(expriment_name="CAM")

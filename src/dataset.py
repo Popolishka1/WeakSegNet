@@ -232,9 +232,9 @@ def data_loading(path: str,
     
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
-    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=0)
 
     print("[Data loaded succesfully]")
     print(f"\nTraining set: {len(train_dataset)} samples")
