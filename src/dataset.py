@@ -30,7 +30,7 @@ class OxfordPet(Dataset):
         for line in lines:
             name, class_id, species, breed_id = line.strip().split()
 
-            # Be careful, class_id and species-id are 1-indexed in the dataset
+            # Class_id and species-id are 1-indexed in the dataset
             # We convert them to 0-indexed for PyTorch
             # breed_id won't be used for classification, but we keep it for consistency
             self.samples.append({
@@ -48,7 +48,7 @@ class OxfordPet(Dataset):
     def preprocess_mask(trimap):
         """Converts the trimap to a binary mask (1 for pet pixels, 0 for background)."""
         processed_mask = np.zeros_like(trimap, dtype=np.uint8)
-        processed_mask[(trimap == 1) | (trimap == 3)] = 1 # TODO (all): refine this to process the frontier pixels (3)
+        processed_mask[(trimap == 1) | (trimap == 3)] = 1 
         return processed_mask
     
     @staticmethod
@@ -125,9 +125,6 @@ def data_transform(image_size: int = 256, train: bool = True):
     The syncronization of the augmentations are done in the Dataset class (OxfordPet),
     with torch.set_rng_state() and torch.get_rng_state().
     """
-    # TODO (Paul): consider separating transformations/augmentations for each task (segmentation/classification/CAM)
-
-    # Function to convert PIL mask to tensor. Don't use ToTensor() directly on PIL. See the documentation of ToTensor()
     def mask_to_tensor(mask):
         mask_np = np.array(mask, dtype=np.uint8)
         mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
@@ -147,7 +144,7 @@ def data_transform(image_size: int = 256, train: bool = True):
     ]
 
     # Training-specific augmentations
-    if train: # TODO (all): find other augmentations
+    if train:
         # For images
         image_transforms = [
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
@@ -156,10 +153,7 @@ def data_transform(image_size: int = 256, train: bool = True):
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ] 
-        # TODO (Paul): I have a clue finally: use this pytorch package from torchvision.transforms import v2
-        # https://pytorch.org/vision/main/auto_examples/transforms/plot_transforms_getting_started.html 
         
-        # For masks - same flip (syncronized with image) but no color jitter
         mask_transforms = [
             transforms.Resize(size=(image_size, image_size), interpolation=Image.NEAREST),
             # transforms.RandomHorizontalFlip(p=0.5), # TODO: find a way to synchronize this with the image
@@ -174,8 +168,7 @@ def data_transform(image_size: int = 256, train: bool = True):
 
 def inverse_normalize(tensor):
     """
-    Reverse normalization for visualization.
-    Be careful, if you change normalization values in data_transform(), change them here too.
+    Reverse normalisation for visualisation.
     """
     inv_normalize = transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225], std=[1/0.229, 1/0.224, 1/0.225])
     return inv_normalize(tensor)
@@ -254,7 +247,6 @@ def data_loading(path: str,
     val_dataset = Subset(full_val_dataset, val_indices)
         
     # Create train, val & test loaders
-    # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
     train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size_val, shuffle=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size_test, shuffle=False, num_workers=0)
