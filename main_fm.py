@@ -6,16 +6,22 @@ import os
 import requests
 import numpy as np
 from torch.utils.data import DataLoader
-
-from src.cam_utils import generate_pseudo_masks, get_cam_generator
-from src.classification import select_classifier
 from src.models import select_segmentation_model
-from src.dataset import load_data_wrapper, PseudoMaskDataset
-from src.fit import train_classifier, train_segmentation_model
+from src.fit import train_segmentation_model, train_classifier
 from src.utils import load_device, clear_cuda_cache, parse_args
-from src.visualisation import visualise_predictions, visualise_cams
-from src.metrics import evaluate_model, evaluate_classifier, save_metrics_to_csv
-from src.fm_utils import SAMWrapper, SAMWrapperWithCAM
+from src.metrics import evaluate_model, save_metrics_to_csv, evaluate_classifier
+from src.visualisation import visualise_predictions
+from src.dataset import load_data_wrapper, PseudoMaskDataset
+from src.fm_utils import SAMWrapper, SAMWrapperWithCAM, load_data_with_off_center
+from src.cam_utils import generate_pseudo_masks
+from src.classification import select_classifier
+import cv2
+import torch
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+from src.dataset import inverse_normalize
+from src.cam_utils import  cam_to_binary_mask, get_cam_generator
 
 from sam2.build_sam import build_sam2
 from sam2.sam2_image_predictor import SAM2ImagePredictor
@@ -32,13 +38,15 @@ def zero_shot_SAM():
     
     # Set sam flag to True
     SAM_FLAG = True
+    off_center = False
     
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
-    # TO DO: The results are not really good right now, we should try to load the data without any applied transformation.
-    # So, modify the load_data_wrapper
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    if off_center:
+        train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    else:
+        train_loader, val_loader, test_loader = load_data_with_off_center(config=config, off_center = off_center, sam=SAM_FLAG, max_shift=0.3)
     print("Created data loaders.\n")
     
     ##################################################
@@ -100,11 +108,15 @@ def cam_pseudo_mask_training():
     
     # Set sam flag to True for minimal transformations
     SAM_FLAG = True
+    off_center = False
     
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    if off_center:
+        train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    else:
+        train_loader, val_loader, test_loader = load_data_with_off_center(config=config, off_center = off_center, sam=SAM_FLAG, max_shift=0.3)
     print("Created data loaders.\n")
 
     #######################
@@ -280,12 +292,16 @@ def pseudo_mask_SAM():
     
     # Set the SAM flag so the minimal transformations (for SAM) are applied.
     SAM_FLAG = True
+    off_center = False
     
     ##################################################
     # 1. Load dataset (train, val, and test loaders) #
     ##################################################
-    train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
-    print("Data loaders created.\n")
+    if off_center:
+        train_loader, val_loader, test_loader = load_data_wrapper(config=config, sam=SAM_FLAG)
+    else:
+        train_loader, val_loader, test_loader = load_data_with_off_center(config=config, off_center = off_center, sam=SAM_FLAG, max_shift=0.3)
+    print("Created data loaders.\n")
     
     ##################################################
     # 2. Download and initialise SAM                #
