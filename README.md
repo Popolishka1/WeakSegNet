@@ -61,25 +61,25 @@ pip install sam2
 ```
 
 ### 2. Baselines (fully supervised use case)
-Run the baseline script with the desired config (stored in a .json file in ``src\config``` **Modify the config to change the parameters**)
+Run the baseline script with the desired config (stored in a .json file in ```src/config``` **Modify the config to change the parameters**)
 ```sh
 python python baseline.py --config ./src/config/baseline.json
 ```
 
 ### 3. Weak supervision segmentation : Class Activation Map
-Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
+Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_cam.py --config ./src/configs/main_cam.json
 ```
 
 ### 4. Weak supervision segmentation : Bounding Box
-Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
+Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_bbox.py --config ./src/configs/main_bbox.json
 ```
 
 ### 4. Weak supervision segmentation : Foundation Models
-Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
+Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_fm.py --config ./src/configs/main_fm.json
 ```
