@@ -93,6 +93,11 @@ Run the main script with the desired config (stored in a .json file in ```src/co
 ```sh
 python python main_bbox.py --config ./src/configs/main_bbox.json
 ```
+Bounding box experiments: 
+```sh
+python main_bbox.py --config ./src/configs/main_bbox_slic.json
+python main_bbox.py --config ./src/configs/main_bbox_grabcut.json
+```
 
 ### 4. Weak supervision segmentation : Foundation Models
 Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
