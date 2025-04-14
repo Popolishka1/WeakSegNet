@@ -1,0 +1,26 @@
+{
+    "data_folder": "data",
+  
+    "train_batch_size": 64,
+    "val_batch_size": 32,
+    "test_batch_size": 64,
+    "val_split": 0.2,
+  
+    "image_size": 256,
+  
+    "segmentation_model": "DeepLabV3",
+    "weakseg_model_save_path": "src/models/ws_cam_DeepLabV3.pth",
+  
+    "variant": "Super-Pixel",
+    "dataset_output_dir": "super-pixel",
+    "grabcut_threshold": 0.5,
+  
+    "train_segmentation": true,
+    "n_epochs_seg": 20,
+    "learning_rate_seg": 0.0001,
+  
+    "segmentation_metrics_save_path": "results/cam/segmentation_metrics.csv",
+    "segmentation_visualisation_save_path": "results/cam/segmentation_examples.png"
+  
+  }
+  
