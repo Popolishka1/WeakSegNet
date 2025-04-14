@@ -56,7 +56,7 @@ def precision_recall(output, gt_mask, threshold=0.5, eps=1e-7):
 def evaluate_model(model, test_loader, threshold=0.5, device="cuda"):
     """
     Evaluate segmentation model performance on test set.
-    Gloval evaluation of the model performance (metrics are not averaged per batch vut global).
+    Global evaluation of the model performance (metrics are not averaged per batch but global).
     """
     print("\n----Evaluating the segmentation model on the test set...")
     model.eval()
