@@ -84,6 +84,25 @@ Run the main script with the desired config (stored in a .json file in ``src\con
 python python main_fm.py --config ./src/configs/main_fm.json
 ```
 
+Zero-shot experiment: 
+```sh
+python main_fm.py --config ./src/configs/main_fm.json
+```
+with the last line of main_fm.py: main(mode = "zero_shot").
+
+Pseudo-mask experiment:
+```sh
+python main_fm.py --config ./src/configs/main_fm.json
+```
+with the last line of main_fm.py: main(mode = "pseudo_mask").
+
+CAM-SAM experiment:
+```sh
+python main_fm.py --config ./src/configs/cam_sam_config.json
+```
+with the last line of main_fm.py: main(mode = "cam_pseudo_mask").
+
+
 ## References & resources
 - **Project information**: see on Moodle the .pdf file
 - **Dataset**: [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
