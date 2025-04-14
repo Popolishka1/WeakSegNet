@@ -71,6 +71,16 @@ Run the main script with the desired config (stored in a .json file in ```src/co
 ```sh
 python python main_cam.py --config ./src/configs/main_cam.json
 ```
+Ablation studies experiments:
+```sh
+python main_cam.py --config ./src/configs/main_cam_00001.json
+python main_cam.py --config ./src/configs/main_cam_0001.json
+python main_cam.py --config ./src/configs/main_cam_001.json
+python main_cam.py --config ./src/configs/main_cam_01.json
+python main_cam.py --config ./src/configs/main_cam_0005.json
+python main_cam.py --config ./src/configs/main_cam_05.json
+python main_cam.py --config ./src/configs/main_cam_07.json
+```
 
 ### 4. Weak supervision segmentation : Bounding Box
 Run the main script with the desired config (stored in a .json file in ```src/configs``` **Modify the config to change the parameters**)
