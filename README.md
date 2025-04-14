@@ -13,8 +13,8 @@ Our implementation is evaluated on the **Oxford-IIIT Pet Dataset**.
 - Compare performance with a **fully-supervised method** and conduct an **ablation study** on key hyperparameters
 
 ### Extension
-In addition, we will explorethe following research questions to enhance the project:
-- How do different forms of weak supervision impact segmentation performance?
+In addition, we will explore the following research questions to enhance the project:
+- What are the key limitations of pseudo mask generation in WSSS, and how can foundation models help overcome them?
 - Conduct controlled experiments to evaluate the segmentation quality under weak labels
 
 ## Dataset
@@ -52,36 +52,36 @@ In addition, we will explorethe following research questions to enhance the proj
 ## Getting started and running the code
 
 ### 1️. Environment setup
-Create a conda env and install dependencies:
+Using the comp0197-cw1-pt conda environment, install the following two package: 
 ```sh
-conda create --name weakseg python=3.9 -y && \
-conda activate weakseg && \
-conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia && \
-conda install -y -c conda-forge opencv
+pip install opencv-python
+```
+```sh
+pip install git+https://github.com/facebookresearch/sam2.git
 ```
 
 ### 2. Baselines (fully supervised use case)
 Run the baseline script with the desired config (stored in a .json file in ``src\config``` **Modify the config to change the parameters**)
 ```sh
-python python baseline.py --config .\src\config\baseline.json
+python python baseline.py --config ./src/config/baseline.json
 ```
 
 ### 3. Weak supervision segmentation : Class Activation Map
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
-python python main_cam.py --config .\src\configs\main_cam.json
+python python main_cam.py --config ./src/configs/main_cam.json
 ```
 
 ### 4. Weak supervision segmentation : Bounding Box
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
-python python main_bbox.py --config .\src\configs\main_bbox.json
+python python main_bbox.py --config ./src/configs/main_bbox.json
 ```
 
 ### 4. Weak supervision segmentation : Foundation Models
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
-python python main_fm.py --config .\src\configs\main_fm.json
+python python main_fm.py --config ./src/configs/main_fm.json
 ```
 
 ## References & resources
