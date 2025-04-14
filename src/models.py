@@ -21,7 +21,6 @@ class DoubleConv(nn.Module):
         return self.conv(x)
 
 
-## TODO (all): implement variation of  UNet? See UNet++
 class UNet(nn.Module):
     """
     UNet model (encoder-decoder architecture) 
@@ -58,17 +57,16 @@ class UNet(nn.Module):
         return torch.sigmoid(self.out_conv(dec1))
 
 
-# TODO (all): consider ResNet101 instead of ResNet50 for the backbone of DeepLabV3 + FCN
 class DeepLabV3(nn.Module):
     """DeepLabV3 model"""
     def __init__(self, weights=models.DeepLabV3_ResNet50_Weights.DEFAULT):
         super().__init__()
         self.deeplab = models.deeplabv3_resnet50(weights=weights)
-        self.deeplab.classifier[4] = nn.Conv2d(256, 1, kernel_size=1) # small change here: we output one channel ie the mask
+        self.deeplab.classifier[4] = nn.Conv2d(256, 1, kernel_size=1) # small change here: we output one channel (the mask)
 
     def forward(self, x):
         out = self.deeplab(x)['out']
-        return torch.sigmoid(out) # sigmoid bc we want probabs
+        return torch.sigmoid(out)
 
 
 class FCN(nn.Module):
@@ -76,11 +74,11 @@ class FCN(nn.Module):
     def __init__(self, weights=models.FCN_ResNet50_Weights.DEFAULT):
         super().__init__()
         self.fcn = models.fcn_resnet50(weights=weights)
-        self.fcn.classifier[4] = nn.Conv2d(512, 1, kernel_size=1) # same change here: output one channel ie the mask
+        self.fcn.classifier[4] = nn.Conv2d(512, 1, kernel_size=1) # same change here: output one channel (the mask)
     
     def forward(self, x):
         out = self.fcn(x)['out']
-        return torch.sigmoid(out) # probas
+        return torch.sigmoid(out)
 
 
 def select_segmentation_model(model_name):
