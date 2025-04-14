@@ -2,21 +2,19 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
-# TODO (all): find a way to refine cams to get better pseudo masks (dense CRF for instance)
-
 class CAMGenerator:
     def __init__(self, classifier):
         self.classifier = classifier
         self.feature_maps = None
         
-        # Identify architecture type (backbone)
+        # Identify architecture type
         backbone = getattr(classifier, "backbone", None)
         if backbone is None:
             raise ValueError("Classifier must have a backbone attribute. Please check classfication.py.")
 
         self.backbone = backbone
 
-        # Register hook and get the FC weights (be careful with the architecture!!!)
+        # Register hook and get the FC weights
         if isinstance(backbone, models.ResNet):
             # Works for ResNet50 and ResNet101
             self.target_layer = backbone.layer4
@@ -66,7 +64,7 @@ def generate_cam(cam_generator, input_image, target_class=None):
     cam = torch.matmul(weights, features.view(features.shape[0], -1))
     cam = cam.view(features.shape[1], features.shape[2])
 
-    # Normalize CAM
+    # Normalise CAM
     cam = nn.functional.relu(cam)
     cam = cam - cam.min()
     cam = cam / cam.max() if cam.max() > 0 else cam
@@ -137,7 +135,7 @@ def generate_grad_cam_common(cam_generator, input_image, target_class=None, vari
     # Compute CAM
     cam = torch.sum(weights[:, None, None] * fmap, dim=0)
 
-    # Normalize CAM
+    # Normalise CAM
     cam = nn.functional.relu(cam)
     cam = cam - cam.min()
     cam = cam / cam.max() if cam.max() > 0 else cam
@@ -155,7 +153,7 @@ def generate_grad_cam_common(cam_generator, input_image, target_class=None, vari
 def cam_to_binary_mask(cam, cam_threshold: float=0.5):
     """
     Convert CAM to binary mask using threshold.
-    CAM already normalized in the chosen cam generation function.
+    CAM already normalised in the chosen cam generation function.
     """
     binary_mask = (cam > cam_threshold).float()
     return binary_mask.unsqueeze(0)
@@ -188,7 +186,6 @@ def generate_pseudo_masks_(dataloader, cam_generator, generate_cam_func, cam_thr
             pseudo_masks.append(pseudo_mask.cpu())
     return pseudo_masks
 
-# TODO: might be better to use DenseCRF to refine the masks
 def generate_pseudo_masks(dataloader, classifier, cam_type='CAM', cam_threshold=0.5, device='cpu'):
     """Generate pseudo masks using a provided CAM generator and method."""
 
