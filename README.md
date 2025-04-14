@@ -73,13 +73,13 @@ Run the main script with the desired config (stored in a .json file in ``src\con
 python python main_cam.py --config .\src\configs\main_cam.json
 ```
 
-### 4. Weak supervision segmentation : Bounding Box (not yet done....)
+### 4. Weak supervision segmentation : Bounding Box
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_bbox.py --config .\src\configs\main_bbox.json
 ```
 
-### 4. Weak supervision segmentation : Foundation Models (not yet done....)
+### 4. Weak supervision segmentation : Foundation Models
 Run the main script with the desired config (stored in a .json file in ``src\configs``` **Modify the config to change the parameters**)
 ```sh
 python python main_fm.py --config .\src\configs\main_fm.json
