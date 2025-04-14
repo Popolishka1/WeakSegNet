@@ -5,42 +5,28 @@ import numpy as np
 from src.cam_utils import get_cam_generator, generate_pseudo_masks
 from src.dataset import load_data_wrapper, PseudoMaskDataset
 
-class SAMWrapper:
-    def __init__(self, predictor, device):
-        self.predictor = predictor
-        self.device = device
-
-    def __call__(self, images):
-        """
-        Processes a batch of images using the SAM2 predictor.
-        Expects images as a batch of tensors (C, H, W). Internally loops per image.
-        """
-        outputs = []
-        for image in images:
-            # Convert tensor (C,H,W) to a NumPy image (H,W,C) and scale to 0-255.
-            image_np = image.permute(1, 2, 0).cpu().numpy()
-            image_np = (image_np * 255).astype(np.uint8)
-            self.predictor.set_image(image_np)
-            
-            # Define a weak prompt: use the image center dynamically.
-            H, W, _ = image_np.shape
-            input_point = np.array([[W // 2, H // 2]])  # Note the order: (x, y)
-            input_label = np.array([1])
-            
-            masks, _, _ = self.predictor.predict(
-                point_coords=input_point,
-                point_labels=input_label,
-                multimask_output=False,
-            )
-            
-            outputs.append(torch.from_numpy(masks[0]).unsqueeze(0).float().to(self.device))
-        return torch.stack(outputs, dim=0)
-
-    def eval(self):
-        return self
-
 
 class SAMWrapper:
+    """
+    Wrapper for applying the SAM2 predictor to a batch of images using a center-point prompt.
+
+    Args:
+        predictor: A SAM2 predictor object implementing set_image() and predict().
+        device (torch.device): The device to which output masks are moved.
+
+    Call Args:
+        images (Tensor): A batch of images as torch tensors of shape (N, C, H, W).
+        multi (bool): If True, enables SAM2's multimask output mode (returns multiple mask hypotheses).
+                      The largest mask is selected to mitigate undermasking.
+
+    Returns:
+        Tensor: A batch of predicted binary masks of shape (N, 1, H, W), one per input image.
+
+    Notes:
+        - Each image is processed independently with a weak center-point prompt.
+        - The largest of the returned masks is selected based on pixel area.
+        - Designed for minimal prompting and deterministic behavior in batched inference.
+    """
     def __init__(self, predictor, device):
         self.predictor = predictor
         self.device = device
@@ -83,6 +69,18 @@ class SAMWrapper:
 
 
 class SAMWrapperWithCAM:
+    """
+    SAM model wrapper integrating Class Activation Maps (CAM) for prompt generation.
+    
+    Combines SAM's segmentation capabilities with CAM-derived spatial cues to generate
+    precise instance masks without direct point annotations.
+
+    Args:
+        predictor (SamPredictor): Initialized SAM predictor instance
+        pseudo_masks (torch.Tensor): Input CAM masks tensor of shape (B, 1, H, W)
+        num_points (int): Number of peak points to sample from CAM (default: 3)
+        device (str): Computation device (default: "cuda")
+    """
     def __init__(self, predictor, pseudo_masks, num_points=3, device="cuda"):
         self.predictor = predictor
         self.pseudo_masks = pseudo_masks
