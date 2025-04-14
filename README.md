@@ -88,7 +88,3 @@ python python main_fm.py --config .\src\configs\main_fm.json
 ## References & resources
 - **Project information**: see on Moodle the .pdf file
 - **Dataset**: [Oxford-IIIT Pet Dataset](https://www.robots.ox.ac.uk/~vgg/data/pets/)
-
-## Contributors
-- Paul Hellegouarch
-- Jules Talbourdet (primary contributor)
