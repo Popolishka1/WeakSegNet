@@ -1,37 +1,42 @@
-# TODO (Carl): generate weak mask from foundations models
-import json
+import numpy as np
 import torch
 import argparse
 import numpy as np
 from src.cam_utils import get_cam_generator, generate_pseudo_masks
 
+class SAMWrapper:
+    def __init__(self, predictor, device):
+        self.predictor = predictor
+        self.device = device
 
-def parse_args(experiment_name: str):
-    if experiment_name == "SAM":
-        parser = argparse.ArgumentParser(description="SAM segmentation with foundation models (weakly supervised use case)")
-    else:
-        raise ValueError("Experiment name not recognized. Consider switching to the non foundation models utils.")
-    parser.add_argument("--config",
-                        type=str,
-                        required=True,
-                        help="Path to .json config file containing all experiment settings"
-                        )
-    args = parser.parse_args()
-    # Load the configuration from the .json file
-    with open(args.config, "r") as f:
-        config = json.load(f)
-    return config
+    def __call__(self, images):
+        """
+        Processes a batch of images using the SAM2 predictor.
+        Expects images as a batch of tensors (C, H, W). Internally loops per image.
+        """
+        outputs = []
+        for image in images:
+            # Convert tensor (C,H,W) to a NumPy image (H,W,C) and scale to 0-255.
+            image_np = image.permute(1, 2, 0).cpu().numpy()
+            image_np = (image_np * 255).astype(np.uint8)
+            self.predictor.set_image(image_np)
+            
+            # Define a weak prompt: use the image center dynamically.
+            H, W, _ = image_np.shape
+            input_point = np.array([[W // 2, H // 2]])  # Note the order: (x, y)
+            input_label = np.array([1])
+            
+            masks, _, _ = self.predictor.predict(
+                point_coords=input_point,
+                point_labels=input_label,
+                multimask_output=False,
+            )
+            
+            outputs.append(torch.from_numpy(masks[0]).unsqueeze(0).float().to(self.device))
+        return torch.stack(outputs, dim=0)
 
-
-def load_device():
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"\n[Using device: {DEVICE}]")
-    return DEVICE
-
-
-def clear_cuda_cache():
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    def eval(self):
+        return self
 
 
 class SAMWrapper:
@@ -73,7 +78,6 @@ class SAMWrapper:
 
     def eval(self):
         return self
-
 
 
 

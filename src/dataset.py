@@ -184,17 +184,39 @@ def inverse_normalize(tensor):
 def data_loading(path: str,
                  data_split_size: tuple,
                  image_size: int = 256,
-                 seed: int = 42
+                 seed: int = 42,
+                 sam: bool = False
                  ):
     """Load Oxford-IIIT Pet Dataset and split into train, val and test sets. Return corresponding loaders."""
     print("\n----Loading data...")
     batch_size_train, batch_size_val, batch_size_test, val_split = data_split_size
 
-    # Train data gets augmentations
-    train_image_transform, train_mask_transform = data_transform(image_size=image_size, train=True)
-    
-    # Test and validation data get basic transforms (no augmentations)
-    test_image_transform, test_mask_transform = data_transform(image_size=image_size, train=False)
+    if sam:
+        def mask_to_tensor(mask):
+            mask_np = np.array(mask, dtype=np.uint8)
+            mask_tensor = torch.from_numpy(mask_np).unsqueeze(0).float()
+            return mask_tensor
+
+        minimal_transform_img = transforms.Compose([
+            transforms.Resize((image_size, image_size)),
+            transforms.ToTensor(),  # for RGB images this is fine.
+        ])
+
+        minimal_transform_mask = transforms.Compose([
+            transforms.Resize((image_size, image_size), interpolation=Image.NEAREST),
+            transforms.Lambda(mask_to_tensor)
+        ])
+
+        train_image_transform = minimal_transform_img
+        train_mask_transform = minimal_transform_mask
+        test_image_transform = minimal_transform_img
+        test_mask_transform = minimal_transform_mask
+    else:
+        # When not using SAM, use the full data transformation pipeline:
+        # Train data gets augmentations.
+        train_image_transform, train_mask_transform = data_transform(image_size=image_size, train=True)
+        # Test and validation data get basic transforms (no augmentations).
+        test_image_transform, test_mask_transform = data_transform(image_size=image_size, train=False)
 
     # Load train dataset
     full_train_dataset = OxfordPet(
@@ -228,9 +250,9 @@ def data_loading(path: str,
                                               )
     
     # Create subsets with proper transforms
-    train_dataset = Subset(full_train_dataset, train_indices)
+    train_dataset = Subset(full_train_dataset, train_indices)    
     val_dataset = Subset(full_val_dataset, val_indices)
-    
+        
     # Create train, val & test loaders
     # TODO: num_workers > 0 if enough CPU cores (beug with Windows)
     train_loader = DataLoader(train_dataset, batch_size_train, shuffle=True, num_workers=0)
@@ -244,7 +266,7 @@ def data_loading(path: str,
     return train_loader, val_loader, test_loader
 
 
-def load_data_wrapper(config):
+def load_data_wrapper(config, sam=False):
     """"Wrapper function to load data from the config file"""
     BASE_DIR = os.getcwd()
     FILE_PATH = os.path.join(BASE_DIR, config["data_folder"])
@@ -259,4 +281,4 @@ def load_data_wrapper(config):
     # Image size for resize  
     image_size = config["image_size"]
     
-    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size)
+    return data_loading(path=FILE_PATH, data_split_size=data_split_size, image_size=image_size, sam=sam)
